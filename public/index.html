@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>Job Sourcing — Upload de Prints</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main>
+    <h1>Job Sourcing</h1>
+
+    <section class="card">
+      <h2>Enviar prints</h2>
+      <form id="form-upload">
+        <input type="file" id="input-prints" name="prints" accept="image/*" multiple required />
+        <button type="submit">Enviar e processar</button>
+      </form>
+      <p id="upload-status"></p>
+      <ul id="upload-resultado" class="lista-resultados"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Pendentes de confirmação</h2>
+      <button id="btn-recarregar">Recarregar lista</button>
+      <ul id="lista-pendentes" class="lista-pendentes"></ul>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

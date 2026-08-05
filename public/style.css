@@ -1,0 +1,94 @@
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 760px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  color: #1a1a1a;
+}
+
+h1 {
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+form {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+button {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#upload-status {
+  color: #555;
+  min-height: 1.2em;
+}
+
+.lista-resultados,
+.lista-pendentes {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.item {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.item h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.item .meta {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.4rem;
+}
+
+.item .descricao {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.item .aviso {
+  color: #b45309;
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+}
+
+.item .acoes {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.item .acoes button.descartar {
+  background: #fff;
+  color: #b91c1c;
+  border-color: #b91c1c;
+}
