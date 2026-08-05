@@ -1,16 +1,36 @@
 /**
- * Normaliza um resultado bruto de busca para o formato de
- * `empresas_nao_checadas`, preservando o dado bruto original mesmo
- * quando incompleto.
+ * Heurística simples para separar nome, localização e descrição a partir
+ * do texto bruto extraído por OCR de um print de vaga/empresa. O texto
+ * bruto completo é sempre preservado à parte (ver dados_brutos), então
+ * erros aqui não perdem informação — só afetam os campos de destaque.
  */
-function normalizarResultado(resultadoBruto) {
+const PADRAO_LOCALIZACAO = /\b(remoto|home\s*office|h[ií]brido|presencial)\b|\b[A-ZÀ-Ú]{2}\b\s*[-–]\s*brasil|,\s*[A-ZÀ-Ú]{2}\b/i;
+
+function extrairCamposDePrint(textoBruto) {
+  const linhas = (textoBruto || '')
+    .split('\n')
+    .map((linha) => linha.trim())
+    .filter(Boolean);
+
+  if (linhas.length === 0) {
+    return {
+      nome: null,
+      localizacao: null,
+      descricao: null,
+      motivo_duvida: 'OCR não retornou texto legível para este print.',
+    };
+  }
+
+  const linhaLocalizacao = linhas.find((linha) => PADRAO_LOCALIZACAO.test(linha));
+
   return {
-    nome: resultadoBruto.nome ?? null,
-    site: resultadoBruto.site ?? null,
-    fonte: resultadoBruto.fonte ?? null,
-    dados_brutos: JSON.stringify(resultadoBruto),
-    motivo_duvida: resultadoBruto.motivo_duvida ?? null,
+    nome: linhas[0],
+    localizacao: linhaLocalizacao ?? null,
+    descricao: linhas.join(' '),
+    motivo_duvida: linhaLocalizacao
+      ? null
+      : 'Localização não identificada automaticamente a partir do print — revisar manualmente.',
   };
 }
 
-module.exports = { normalizarResultado };
+module.exports = { extrairCamposDePrint };
