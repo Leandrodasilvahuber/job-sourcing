@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS empresas_nao_checadas (
     nome TEXT,
     site TEXT,
     fonte TEXT,
+    fonte_id TEXT,
     descricao TEXT,
     localizacao TEXT,
     dados_brutos TEXT,

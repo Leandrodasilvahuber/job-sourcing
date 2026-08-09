@@ -11,10 +11,12 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 const buscaRoutes = require('./routes/busca');
 const empresasRoutes = require('./routes/empresas');
 const enviosRoutes = require('./routes/envios');
+const crawlerRoutes = require('./routes/crawler');
 
 app.use('/busca', buscaRoutes);
 app.use('/empresas', empresasRoutes);
 app.use('/envios', enviosRoutes);
+app.use('/crawler', crawlerRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

@@ -8,4 +8,20 @@ const db = new Database(dbPath);
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 
+const tabelaExiste = db.prepare(`
+  SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'empresas_nao_checadas'
+`).get();
+if (tabelaExiste) {
+  const colunasExistentes = db.prepare('PRAGMA table_info(empresas_nao_checadas)').all().map((c) => c.name);
+  if (!colunasExistentes.includes('fonte_id')) {
+    db.exec('ALTER TABLE empresas_nao_checadas ADD COLUMN fonte_id TEXT');
+  }
+}
+
+db.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_empresas_fonte_fonte_id
+    ON empresas_nao_checadas(fonte, fonte_id)
+    WHERE fonte_id IS NOT NULL
+`);
+
 module.exports = db;

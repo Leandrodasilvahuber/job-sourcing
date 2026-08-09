@@ -1,9 +1,8 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const db = require('../db/database');
 const { extrairTexto } = require('../services/ocr');
-const { extrairCamposDePrint } = require('../services/coletores');
+const { extrairEmpresasDePrint, slugify, salvarEmpresaColetada } = require('../services/coletores');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -16,11 +15,6 @@ const upload = multer({
   },
 });
 
-const insertEmpresaNaoChecada = db.prepare(`
-  INSERT INTO empresas_nao_checadas (nome, site, fonte, descricao, localizacao, dados_brutos, motivo_duvida)
-  VALUES (@nome, @site, @fonte, @descricao, @localizacao, @dados_brutos, @motivo_duvida)
-`);
-
 router.post('/', upload.array('prints', 20), async (req, res) => {
   const arquivos = req.files;
   if (!arquivos || arquivos.length === 0) {
@@ -28,25 +22,33 @@ router.post('/', upload.array('prints', 20), async (req, res) => {
   }
 
   const inseridos = [];
+  const duplicados = [];
   for (const arquivo of arquivos) {
     const textoBruto = await extrairTexto(arquivo.buffer);
-    const campos = extrairCamposDePrint(textoBruto);
+    const empresasDetectadas = extrairEmpresasDePrint(textoBruto);
 
-    const registro = {
-      nome: campos.nome,
-      site: null,
-      fonte: 'print',
-      descricao: campos.descricao,
-      localizacao: campos.localizacao,
-      dados_brutos: JSON.stringify({ arquivo_original: arquivo.originalname, texto_ocr: textoBruto }),
-      motivo_duvida: campos.motivo_duvida,
-    };
+    for (const campos of empresasDetectadas) {
+      const registro = {
+        nome: campos.nome,
+        site: null,
+        fonte: 'print',
+        fonte_id: campos.nome ? slugify(campos.nome) : null,
+        descricao: campos.descricao,
+        localizacao: campos.localizacao,
+        dados_brutos: JSON.stringify({ arquivo_original: arquivo.originalname, texto_ocr: textoBruto }),
+        motivo_duvida: campos.motivo_duvida,
+      };
 
-    const info = insertEmpresaNaoChecada.run(registro);
-    inseridos.push({ id: info.lastInsertRowid, ...registro });
+      const info = salvarEmpresaColetada(registro);
+      if (info.changes > 0) {
+        inseridos.push({ id: info.lastInsertRowid, ...registro });
+      } else {
+        duplicados.push(registro.nome);
+      }
+    }
   }
 
-  res.status(201).json({ inseridos });
+  res.status(201).json({ inseridos, duplicados });
 });
 
 router.use((err, req, res, next) => {
