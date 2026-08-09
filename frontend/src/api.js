@@ -40,3 +40,18 @@ export function enviarPrints(arquivos) {
   for (const arquivo of arquivos) formData.append('prints', arquivo);
   return requisitar(`${BASE}/busca`, { method: 'POST', body: formData });
 }
+
+// Não usa requisitar(): 409 e 429 são respostas esperadas com corpo útil
+// (motivo do bloqueio), não erros genéricos a serem descartados.
+export async function rodarCrawler() {
+  const response = await fetch(`${BASE}/crawler/run`, { method: 'POST' });
+  const corpo = await response.json().catch(() => ({}));
+  // httpStatus por último e com nome próprio: o corpo da resposta também
+  // tem um campo "status" (ex: "iniciado") que não pode sobrescrever o
+  // código HTTP real usado para decidir o que mostrar na tela.
+  return { ...corpo, httpStatus: response.status };
+}
+
+export function statusCrawler() {
+  return requisitar(`${BASE}/crawler/status`);
+}
