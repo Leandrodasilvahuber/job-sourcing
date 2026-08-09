@@ -10,8 +10,8 @@ Todas as empresas coletadas — por qualquer fonte — caem em uma fila de revis
 
 ## Stack
 
-- Node.js + Express
-- SQLite (`better-sqlite3`)
+- Backend: Node.js + Express, SQLite (`better-sqlite3`)
+- Frontend: React + Vite (em `frontend/`), buildado como estático e servido pelo próprio Express
 - `tesseract.js` (OCR) + `multer` (upload de arquivos)
 - `axios` (requisições à API do GitHub)
 
@@ -19,9 +19,12 @@ Todas as empresas coletadas — por qualquer fonte — caem em uma fila de revis
 
 ```bash
 npm install
-cp .env.example .env   # se existir; caso contrário, ver variáveis abaixo
-npm run dev             # http://localhost:3000, com reload via nodemon
+npm --prefix frontend install
+npm run build:frontend   # gera frontend/dist direto em public/
+npm run dev               # http://localhost:3000, com reload via nodemon
 ```
+
+Para trabalhar no frontend com hot reload, rode o backend (`npm run dev`) e, em outro terminal, `npm run dev:frontend` — o Vite sobe em porta própria (ex: `5173`) com proxy das rotas `/empresas`, `/busca`, `/envios` e `/crawler` para `localhost:3000`. Ao terminar, rode `npm run build:frontend` para atualizar `public/` com o build de produção (é o que o Express realmente serve).
 
 ### Variáveis de ambiente (`.env`)
 
@@ -52,7 +55,8 @@ Deduplicação: empresas com `fonte_id` preenchido (caso do GitHub) têm índice
 - `POST /busca` — multipart, campo `prints` (até 20 imagens). Roda OCR em cada imagem e insere em `empresas_nao_checadas` com `fonte = 'print'`.
 
 ### Empresas
-- `GET /empresas/nao-checadas` — lista pendentes de revisão.
+- `GET /empresas/nao-checadas` — lista paginada e filtrável. Query params: `page`, `pageSize` (máx. 100), `status` (`pendente`/`confirmada`/`descartada`, omitido = todos), `fonte`, `q` (busca em nome/localização/descrição). Retorna `{ data, total, page, pageSize, totalPages }`.
+- `GET /empresas/nao-checadas/fontes` — lista as fontes distintas já coletadas (para popular o filtro).
 - `POST /empresas/nao-checadas/:id/confirmar` — promove para `empresas_confirmadas`.
 - `POST /empresas/nao-checadas/:id/descartar` — marca como descartada.
 
@@ -105,9 +109,18 @@ src/
     crawler.js                  # disparo do crawler via API
 scripts/
   runCrawler.js             # execução standalone do crawler
-public/                     # frontend estático (upload em lote de prints)
+frontend/                   # app React (Vite) — build gera direto em public/
+  src/
+    App.jsx                  # tela principal: upload + tabela paginada de empresas
+    Filtros.jsx, TabelaEmpresas.jsx, Paginacao.jsx, UploadPrints.jsx
+    api.js                    # chamadas à API
+public/                     # build de produção do frontend, servido estático pelo Express
 data/                       # banco SQLite (ignorado no git)
 ```
+
+## Frontend
+
+Tela única em React: upload de prints + tabela paginada de `empresas_nao_checadas` com filtros por status, fonte e busca livre (nome/localização/descrição), e ações de confirmar/descartar direto na linha.
 
 ## Próximos passos (não implementados)
 
