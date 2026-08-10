@@ -57,11 +57,11 @@ export function listarEmpresasConfirmadas({ page, pageSize, q }) {
   return requisitar(`${BASE}/empresas/confirmadas?${params.toString()}`);
 }
 
-export function enviarCv(empresaId) {
-  return requisitar(`${BASE}/envios`, {
+export function enviarCv(empresaId, destinatarioEmail) {
+  return requisitar(`${BASE}/envios/cv`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ empresa_id: empresaId, canal: 'cv', status: 'enviado' }),
+    body: JSON.stringify({ empresa_id: empresaId, destinatario_email: destinatarioEmail }),
   });
 }
 

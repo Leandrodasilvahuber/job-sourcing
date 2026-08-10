@@ -264,6 +264,19 @@
   white-space: pre-wrap;
 }
 
+.lista-escolha-email {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lista-escolha-email button {
+  width: 100%;
+}
+
 .badge {
   display: inline-block;
   padding: 0.15rem 0.5rem;

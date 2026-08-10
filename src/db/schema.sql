@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS envios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     empresa_id INTEGER NOT NULL,
     canal TEXT,
+    destinatario_email TEXT,
     conteudo_enviado TEXT,
     data_envio TEXT DEFAULT CURRENT_TIMESTAMP,
     status TEXT DEFAULT 'enviado',

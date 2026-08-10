@@ -61,4 +61,14 @@ if (tabelaConfirmadasExiste) {
   }
 }
 
+const tabelaEnviosExiste = db.prepare(`
+  SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'envios'
+`).get();
+if (tabelaEnviosExiste) {
+  const colunasEnvios = db.prepare('PRAGMA table_info(envios)').all().map((c) => c.name);
+  if (!colunasEnvios.includes('destinatario_email')) {
+    db.exec('ALTER TABLE envios ADD COLUMN destinatario_email TEXT');
+  }
+}
+
 module.exports = db;

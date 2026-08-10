@@ -10,6 +10,7 @@ import { Paginacao } from './Paginacao';
 import { UploadPrints } from './UploadPrints';
 import { CrawlerPanel } from './CrawlerPanel';
 import { Dashboard } from './Dashboard';
+import { EscolherEmailModal } from './EscolherEmailModal';
 import './App.css';
 
 const FILTROS_INICIAIS = { q: '', status: 'pendente', fonte: '', pageSize: 20 };
@@ -37,6 +38,7 @@ export default function App() {
   const [carregandoConfirmadas, setCarregandoConfirmadas] = useState(true);
   const [erroConfirmadas, setErroConfirmadas] = useState(null);
   const [enviandoIds, setEnviandoIds] = useState(() => new Set());
+  const [escolhaEmail, setEscolhaEmail] = useState(null);
 
   const qDebounced = useDebounce(filtros.q);
   const qConfirmadasDebounced = useDebounce(qConfirmadas);
@@ -115,11 +117,15 @@ export default function App() {
     }
   }
 
-  async function handleEnviarCv(empresa) {
-    if (!confirm(`Enviar CV para "${empresa.nome}"?`)) return;
+  function candidatosEmail(empresa) {
+    const brutos = [empresa.contato_email, ...(empresa.pesquisa_emails || [])];
+    return [...new Set(brutos.filter((e) => e && e.trim()))];
+  }
+
+  async function executarEnvioCv(empresa, destinatarioEmail) {
     setEnviandoIds((s) => new Set(s).add(empresa.id));
     try {
-      await enviarCv(empresa.id);
+      await enviarCv(empresa.id, destinatarioEmail);
       setRecarregarToken((t) => t + 1);
     } catch (e) {
       alert(`Erro ao enviar CV: ${e.message}`);
@@ -130,6 +136,29 @@ export default function App() {
         return n;
       });
     }
+  }
+
+  async function handleEnviarCv(empresa) {
+    const candidatos = candidatosEmail(empresa);
+
+    if (candidatos.length === 0) {
+      alert(`Nenhum email encontrado para "${empresa.nome}". Não é possível enviar o CV.`);
+      return;
+    }
+
+    if (candidatos.length === 1) {
+      if (!confirm(`Enviar CV para "${empresa.nome}" (${candidatos[0]})?`)) return;
+      await executarEnvioCv(empresa, candidatos[0]);
+      return;
+    }
+
+    setEscolhaEmail({ empresa, candidatos });
+  }
+
+  function handleEscolherEmail(destinatarioEmail) {
+    const { empresa } = escolhaEmail;
+    setEscolhaEmail(null);
+    executarEnvioCv(empresa, destinatarioEmail);
   }
 
   async function handleDescartar(empresa) {
@@ -218,6 +247,15 @@ export default function App() {
             onChange={setPageConfirmadas}
           />
         </section>
+      )}
+
+      {escolhaEmail && (
+        <EscolherEmailModal
+          empresa={escolhaEmail.empresa}
+          candidatos={escolhaEmail.candidatos}
+          onEscolher={handleEscolherEmail}
+          onFechar={() => setEscolhaEmail(null)}
+        />
       )}
     </main>
   );
