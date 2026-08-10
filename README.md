@@ -38,6 +38,7 @@ Para trabalhar no frontend com hot reload, rode o backend (`npm run dev`) e, em 
 | `GOOGLE_CSE_DAILY_LIMIT` | não | Teto diário de buscas que o app se permite fazer, como proteção de custo (cada busca dispara uma chamada extra ao Gemini para estruturar o resultado). Padrão `100`. Valores `<= 0` são ignorados e caem no padrão. |
 | `GEMINI_API_KEY` | sim, para o crawler do Google e para a pesquisa ao confirmar | Chave de API do Google AI Studio (Gemini). Usada para estruturar em JSON o texto bruto do widget de busca do Google, e para pesquisar/validar empresas ao confirmá-las. Sem `GOOGLE_CSE_ID`/`GEMINI_API_KEY`, a rota do crawler do Google responde `400` explicando o que falta; sem `GEMINI_API_KEY`, a pesquisa ao confirmar fica com `pesquisa_status = 'erro'`. Gerar em [aistudio.google.com/apikey](https://aistudio.google.com/apikey). |
 | `GEMINI_MODEL` | não | Modelo Gemini usado na pesquisa (padrão `gemini-flash-latest`, alias que a Google aponta para o flash mais recente disponível). Precisa suportar grounding via Google Search e saída estruturada em JSON. |
+| `GEMINI_DAILY_LIMIT` | não | Só usado pra exibir "usado / limite" no dashboard (`GET /dashboard/uso-apis`) — a API do Gemini não expõe quota restante, e não há aqui um bloqueio de execução como o `GOOGLE_CSE_DAILY_LIMIT`. Sem essa variável, o dashboard mostra só a contagem de uso, sem limite. |
 
 O banco SQLite é criado automaticamente em `data/vagas.db` na primeira execução (schema em `src/db/schema.sql`).
 

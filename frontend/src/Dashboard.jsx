@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { buscarResumoDashboard, listarPaises, listarExecucoes } from './api';
-import { formatarDataHora } from './format';
+import { buscarResumoDashboard, listarPaises, listarExecucoes, buscarUsoApis } from './api';
+import { formatarDataHora, formatarReset } from './format';
 
 const ROTULO_STATUS_EXECUCAO = {
   em_andamento: 'Em andamento',
@@ -27,9 +27,14 @@ export function Dashboard({ recarregarToken }) {
   const [page, setPage] = useState(1);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
+  const [usoApis, setUsoApis] = useState(null);
 
   useEffect(() => {
     listarPaises().then(setPaises).catch(() => setPaises([]));
+  }, [recarregarToken]);
+
+  useEffect(() => {
+    buscarUsoApis().then(setUsoApis).catch(() => setUsoApis(null));
   }, [recarregarToken]);
 
   useEffect(() => {
@@ -107,6 +112,43 @@ export function Dashboard({ recarregarToken }) {
             </span>
           ))}
         </div>
+      )}
+
+      <h3>Uso das APIs</h3>
+      {usoApis ? (
+        <div className="dashboard-stats">
+          {usoApis.github.erro ? (
+            <div className="stat-card">
+              <span className="stat-valor">—</span>
+              <span className="stat-rotulo">GitHub: {usoApis.github.erro}</span>
+            </div>
+          ) : (
+            <>
+              <div className="stat-card">
+                <span className="stat-valor">{usoApis.github.core.usado} / {usoApis.github.core.limite}</span>
+                <span className="stat-rotulo">GitHub (core) — reseta {formatarReset(usoApis.github.core.reset_em)}</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-valor">{usoApis.github.search.usado} / {usoApis.github.search.limite}</span>
+                <span className="stat-rotulo">GitHub (busca) — reseta {formatarReset(usoApis.github.search.reset_em)}</span>
+              </div>
+            </>
+          )}
+          <div className="stat-card">
+            <span className="stat-valor">
+              {usoApis.google_cse.usado}{usoApis.google_cse.limite ? ` / ${usoApis.google_cse.limite}` : ''}
+            </span>
+            <span className="stat-rotulo">Google (busca) — reseta {formatarReset(usoApis.google_cse.reset_em)}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-valor">
+              {usoApis.gemini.usado}{usoApis.gemini.limite ? ` / ${usoApis.gemini.limite}` : ''}
+            </span>
+            <span className="stat-rotulo">Gemini — reseta {formatarReset(usoApis.gemini.reset_em)}</span>
+          </div>
+        </div>
+      ) : (
+        <p className="mensagem-vazia">Carregando…</p>
       )}
 
       <h3>Histórico de execuções</h3>

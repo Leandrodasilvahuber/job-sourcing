@@ -256,4 +256,5 @@ module.exports = {
   CredenciaisAusentesError,
   QUERIES,
   FONTE_USO,
+  limiteDiario,
 };

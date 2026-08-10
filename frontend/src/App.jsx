@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listarEmpresas, listarFontes, confirmarEmpresa, descartarEmpresa, clienteCrawlerGithub, clienteCrawlerGoogle } from './api';
+import { listarEmpresas, listarFontes, confirmarEmpresa, descartarEmpresa, clienteCrawlerGithub, clienteCrawlerGoogle, listarEmpresasConfirmadas, enviarCv } from './api';
 import { useDebounce } from './useDebounce';
 import { formatarReset } from './format';
 import { Abas } from './Abas';
 import { Filtros } from './Filtros';
 import { TabelaEmpresas } from './TabelaEmpresas';
+import { TabelaConfirmadas } from './TabelaConfirmadas';
 import { Paginacao } from './Paginacao';
 import { UploadPrints } from './UploadPrints';
 import { CrawlerPanel } from './CrawlerPanel';
@@ -16,6 +17,7 @@ const ABAS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'coletar', label: 'Buscar / Coletar' },
   { id: 'empresas', label: 'Empresas' },
+  { id: 'confirmadas', label: 'Confirmadas' },
 ];
 
 export default function App() {
@@ -29,7 +31,15 @@ export default function App() {
   const [recarregarToken, setRecarregarToken] = useState(0);
   const [confirmandoIds, setConfirmandoIds] = useState(() => new Set());
 
+  const [pageConfirmadas, setPageConfirmadas] = useState(1);
+  const [qConfirmadas, setQConfirmadas] = useState('');
+  const [resultadoConfirmadas, setResultadoConfirmadas] = useState({ data: [], total: 0, totalPages: 1 });
+  const [carregandoConfirmadas, setCarregandoConfirmadas] = useState(true);
+  const [erroConfirmadas, setErroConfirmadas] = useState(null);
+  const [enviandoIds, setEnviandoIds] = useState(() => new Set());
+
   const qDebounced = useDebounce(filtros.q);
+  const qConfirmadasDebounced = useDebounce(qConfirmadas);
 
   useEffect(() => {
     listarFontes().then(setFontes).catch(() => setFontes([]));
@@ -58,18 +68,63 @@ export default function App() {
     return () => { cancelado = true; };
   }, [page, filtros.pageSize, filtros.status, filtros.fonte, qDebounced, recarregarToken]);
 
+  useEffect(() => {
+    setPageConfirmadas(1);
+  }, [qConfirmadasDebounced]);
+
+  useEffect(() => {
+    let cancelado = false;
+    setCarregandoConfirmadas(true);
+    setErroConfirmadas(null);
+
+    listarEmpresasConfirmadas({ page: pageConfirmadas, pageSize: 20, q: qConfirmadasDebounced })
+      .then((dados) => {
+        if (!cancelado) setResultadoConfirmadas(dados);
+      })
+      .catch((e) => {
+        if (!cancelado) setErroConfirmadas(e.message);
+      })
+      .finally(() => {
+        if (!cancelado) setCarregandoConfirmadas(false);
+      });
+
+    return () => { cancelado = true; };
+  }, [pageConfirmadas, qConfirmadasDebounced, recarregarToken]);
+
   const recarregar = useCallback(() => setRecarregarToken((t) => t + 1), []);
 
   async function handleConfirmar(empresa) {
     if (!confirm(`Confirmar "${empresa.nome}" como empresa válida?`)) return;
     setConfirmandoIds((s) => new Set(s).add(empresa.id));
     try {
-      await confirmarEmpresa(empresa.id, {});
+      const resultado = await confirmarEmpresa(empresa.id, {});
+      if (resultado.limiteExcedido) {
+        alert(`Limite diário de pesquisa (Gemini) atingido. Tenta de novo às ${formatarReset(resultado.resetEm)}.`);
+      } else if (!resultado.confirmada) {
+        alert(`Empresa não confirmada: ${resultado.motivo}`);
+      }
       recarregar();
     } catch (e) {
       alert(`Erro ao confirmar: ${e.message}`);
     } finally {
       setConfirmandoIds((s) => {
+        const n = new Set(s);
+        n.delete(empresa.id);
+        return n;
+      });
+    }
+  }
+
+  async function handleEnviarCv(empresa) {
+    if (!confirm(`Enviar CV para "${empresa.nome}"?`)) return;
+    setEnviandoIds((s) => new Set(s).add(empresa.id));
+    try {
+      await enviarCv(empresa.id);
+      setRecarregarToken((t) => t + 1);
+    } catch (e) {
+      alert(`Erro ao enviar CV: ${e.message}`);
+    } finally {
+      setEnviandoIds((s) => {
         const n = new Set(s);
         n.delete(empresa.id);
         return n;
@@ -133,6 +188,34 @@ export default function App() {
             totalPages={resultado.totalPages ?? 1}
             total={resultado.total ?? 0}
             onChange={setPage}
+          />
+        </section>
+      )}
+
+      {aba === 'confirmadas' && (
+        <section className="card">
+          <h2>Empresas confirmadas</h2>
+          <div className="filtros">
+            <input
+              type="search"
+              placeholder="Buscar por nome, localização ou descrição…"
+              value={qConfirmadas}
+              onChange={(e) => setQConfirmadas(e.target.value)}
+              className="filtro-busca"
+            />
+          </div>
+          <TabelaConfirmadas
+            empresas={resultadoConfirmadas.data}
+            carregando={carregandoConfirmadas}
+            erro={erroConfirmadas}
+            onEnviarCv={handleEnviarCv}
+            enviandoIds={enviandoIds}
+          />
+          <Paginacao
+            page={resultadoConfirmadas.page ?? pageConfirmadas}
+            totalPages={resultadoConfirmadas.totalPages ?? 1}
+            total={resultadoConfirmadas.total ?? 0}
+            onChange={setPageConfirmadas}
           />
         </section>
       )}

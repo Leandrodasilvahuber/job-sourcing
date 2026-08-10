@@ -1,7 +1,14 @@
 const axios = require('axios');
+const { contagemAtual, incrementarUso, marcarEsgotado, proximaMeiaNoiteLocal } = require('./usoApi');
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const FONTE_USO = 'gemini';
 const MODELO_PADRAO = 'gemini-flash-latest';
+
+function limiteDiario() {
+  const v = Number(process.env.GEMINI_DAILY_LIMIT);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
 
 class CredenciaisGeminiAusentesError extends Error {
   constructor(faltando) {
@@ -12,9 +19,11 @@ class CredenciaisGeminiAusentesError extends Error {
 }
 
 class GeminiQuotaExcedidaError extends Error {
-  constructor(motivo) {
-    super(`Quota da API do Gemini excedida (${motivo}).`);
+  constructor(motivo, resetEm) {
+    super(`Limite diário do Gemini atingido (${motivo}). Tenta de novo às ${resetEm.toLocaleTimeString('pt-BR')}.`);
     this.name = 'GeminiQuotaExcedidaError';
+    this.recurso = 'gemini';
+    this.resetEm = resetEm;
   }
 }
 
@@ -55,6 +64,19 @@ function ehErroDeQuotaGemini(erro) {
 async function gerarConteudo({ contents, tools, generationConfig }) {
   const key = apiKeyOuFalhar();
 
+  // Verifica ANTES de chamar: se o contador local já bateu no limite
+  // configurado (GEMINI_DAILY_LIMIT), nem tenta — evita repetir a mesma
+  // chamada fadada a um 429 do Google a cada "Confirmar".
+  const limite = limiteDiario();
+  if (limite && contagemAtual(FONTE_USO) >= limite) {
+    throw new GeminiQuotaExcedidaError('contador local', proximaMeiaNoiteLocal());
+  }
+
+  // Conta a tentativa (não só sucesso): mesmo uma chamada que volta 429 já
+  // consumiu quota do lado da Google, então precisa entrar na contagem local
+  // exibida no dashboard.
+  incrementarUso(FONTE_USO);
+
   let resposta;
   try {
     resposta = await axios.post(
@@ -68,7 +90,11 @@ async function gerarConteudo({ contents, tools, generationConfig }) {
     );
   } catch (erro) {
     if (ehErroDeQuotaGemini(erro)) {
-      throw new GeminiQuotaExcedidaError(mensagemDeErroGemini(erro));
+      // A quota real da Google é compartilhada com qualquer outro uso da
+      // mesma chave — pode estourar mesmo com o contador local baixo. Trava
+      // o contador local no limite pra não insistir de novo hoje.
+      marcarEsgotado(FONTE_USO, limite);
+      throw new GeminiQuotaExcedidaError(mensagemDeErroGemini(erro), proximaMeiaNoiteLocal());
     }
     throw new Error(mensagemDeErroGemini(erro));
   }

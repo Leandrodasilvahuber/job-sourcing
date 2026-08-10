@@ -23,16 +23,46 @@ export function listarFontes() {
   return requisitar(`${BASE}/empresas/nao-checadas/fontes`);
 }
 
-export function confirmarEmpresa(id, dados) {
-  return requisitar(`${BASE}/empresas/nao-checadas/${id}/confirmar`, {
+// Não usa requisitar() porque 422 aqui não é um erro de infra — é a decisão
+// de negócio "não atende aos requisitos pra confirmar" (não é software / sem
+// contato encontrado), e a UI precisa distinguir isso de uma falha real.
+export async function confirmarEmpresa(id, dados) {
+  const response = await fetch(`${BASE}/empresas/nao-checadas/${id}/confirmar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dados),
   });
+  const corpo = await response.json().catch(() => ({}));
+  if (response.status === 422) {
+    return { confirmada: false, motivo: corpo.motivo, pesquisa: corpo.pesquisa };
+  }
+  if (response.status === 429) {
+    return { confirmada: false, limiteExcedido: true, resetEm: corpo.reset_em };
+  }
+  if (!response.ok) {
+    throw new Error(corpo.error || `Erro ${response.status}`);
+  }
+  return corpo;
 }
 
 export function descartarEmpresa(id) {
   return requisitar(`${BASE}/empresas/nao-checadas/${id}/descartar`, { method: 'POST' });
+}
+
+export function listarEmpresasConfirmadas({ page, pageSize, q }) {
+  const params = new URLSearchParams();
+  params.set('page', page);
+  params.set('pageSize', pageSize);
+  if (q) params.set('q', q);
+  return requisitar(`${BASE}/empresas/confirmadas?${params.toString()}`);
+}
+
+export function enviarCv(empresaId) {
+  return requisitar(`${BASE}/envios`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ empresa_id: empresaId, canal: 'cv', status: 'enviado' }),
+  });
 }
 
 export function enviarPrints(arquivos) {
@@ -81,4 +111,8 @@ export function listarExecucoes({ page = 1, pageSize = 10 } = {}) {
   params.set('page', page);
   params.set('pageSize', pageSize);
   return requisitar(`${BASE}/dashboard/execucoes?${params.toString()}`);
+}
+
+export function buscarUsoApis() {
+  return requisitar(`${BASE}/dashboard/uso-apis`);
 }

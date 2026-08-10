@@ -50,6 +50,15 @@ if (tabelaConfirmadasExiste) {
   if (!colunasConfirmadas.includes('pesquisa_atualizado_em')) {
     db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_atualizado_em TEXT');
   }
+  if (!colunasConfirmadas.includes('pesquisa_resumo')) {
+    db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_resumo TEXT');
+  }
+  if (!colunasConfirmadas.includes('pesquisa_stack')) {
+    db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_stack TEXT');
+  }
+  if (!colunasConfirmadas.includes('pesquisa_eh_software')) {
+    db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_eh_software INTEGER');
+  }
 }
 
 module.exports = db;

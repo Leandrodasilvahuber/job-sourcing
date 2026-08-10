@@ -25,6 +25,7 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
             <th>Coletado em</th>
             <th>Pesquisa</th>
             <th>E-mails</th>
+            <th>Stack</th>
             <th>Existe?</th>
             <th>Ações</th>
           </tr>
@@ -32,7 +33,7 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
         <tbody>
           {empresas.map((empresa) => (
             <tr key={empresa.id} className={carregando ? 'linha-carregando' : ''}>
-              <td className="col-nome" title={empresa.descricao ?? ''}>{empresa.nome ?? '—'}</td>
+              <td className="col-nome" title={empresa.pesquisa_resumo || empresa.descricao || ''}>{empresa.nome ?? '—'}</td>
               <td>{empresa.fonte}</td>
               <td>{empresa.localizacao ?? '—'}</td>
               <td>
@@ -55,6 +56,9 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
                 ) : '—'}
               </td>
               <td>{empresa.pesquisa_emails?.length ? empresa.pesquisa_emails.join(', ') : '—'}</td>
+              <td className="col-stack" title={empresa.pesquisa_stack?.length ? empresa.pesquisa_stack.join(', ') : ''}>
+                {empresa.pesquisa_stack?.length ? empresa.pesquisa_stack.join(', ') : '—'}
+              </td>
               <td>
                 {empresa.pesquisa_existe === null || empresa.pesquisa_existe === undefined
                   ? '—'

@@ -22,6 +22,19 @@ function incrementarUso(fonte) {
   `).run(fonte, dataLocalHoje());
 }
 
+// Usado quando a própria API já recusou a chamada por quota (ex: 429) mas
+// nosso contador local ainda estava abaixo do limite configurado — a quota
+// real do provedor é compartilhada (outros usos da mesma chave) e não temos
+// visibilidade dela, então travamos o contador local no limite pra parar de
+// bater à toa até a próxima meia-noite.
+function marcarEsgotado(fonte, limite) {
+  if (!limite) return;
+  db.prepare(`
+    INSERT INTO uso_api_diario (fonte, data, contagem) VALUES (?, ?, ?)
+    ON CONFLICT(fonte, data) DO UPDATE SET contagem = MAX(contagem, excluded.contagem)
+  `).run(fonte, dataLocalHoje(), limite);
+}
+
 // Não temos visibilidade do reset real da API — usamos a próxima meia-noite
 // local do nosso próprio contador como proxy honesto.
 function proximaMeiaNoiteLocal() {
@@ -30,4 +43,4 @@ function proximaMeiaNoiteLocal() {
   return d;
 }
 
-module.exports = { dataLocalHoje, contagemAtual, incrementarUso, proximaMeiaNoiteLocal };
+module.exports = { dataLocalHoje, contagemAtual, incrementarUso, marcarEsgotado, proximaMeiaNoiteLocal };

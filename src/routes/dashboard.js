@@ -1,6 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
+const { contagemAtual, proximaMeiaNoiteLocal } = require('../services/usoApi');
+const { getRateLimitStatus } = require('../crawlers/githubCrawler');
+const { FONTE_USO: FONTE_GOOGLE_CSE, limiteDiario: limiteDiarioGoogleCse } = require('../crawlers/googleCseCrawler');
+
+const FONTE_GEMINI = 'gemini';
+function limiteDiarioGemini() {
+  const v = Number(process.env.GEMINI_DAILY_LIMIT);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
 
 router.get('/resumo', (req, res) => {
   const { pais } = req.query;
@@ -23,6 +32,41 @@ router.get('/resumo', (req, res) => {
   `).get(params);
 
   res.json({ total, novasHoje, porStatus, porFonte });
+});
+
+router.get('/uso-apis', async (req, res) => {
+  let github;
+  try {
+    const resources = await getRateLimitStatus();
+    github = {
+      core: {
+        usado: resources.core.limit - resources.core.remaining,
+        limite: resources.core.limit,
+        reset_em: new Date(resources.core.reset * 1000),
+      },
+      search: {
+        usado: resources.search.limit - resources.search.remaining,
+        limite: resources.search.limit,
+        reset_em: new Date(resources.search.reset * 1000),
+      },
+    };
+  } catch (erro) {
+    github = { erro: 'Falha ao consultar o rate limit do GitHub.' };
+  }
+
+  const googleCse = {
+    usado: contagemAtual(FONTE_GOOGLE_CSE),
+    limite: limiteDiarioGoogleCse(),
+    reset_em: proximaMeiaNoiteLocal(),
+  };
+
+  const gemini = {
+    usado: contagemAtual(FONTE_GEMINI),
+    limite: limiteDiarioGemini(),
+    reset_em: proximaMeiaNoiteLocal(),
+  };
+
+  res.json({ github, google_cse: googleCse, gemini });
 });
 
 router.get('/paises', (req, res) => {

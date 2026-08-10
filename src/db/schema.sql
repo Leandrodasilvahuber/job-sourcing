@@ -36,6 +36,15 @@ CREATE TABLE IF NOT EXISTS empresas_confirmadas (
     localizacao TEXT,
     observacoes TEXT,
     data_confirmacao TEXT DEFAULT CURRENT_TIMESTAMP,
+    pesquisa_status TEXT DEFAULT 'pendente',
+    pesquisa_markdown TEXT,
+    pesquisa_existe INTEGER,
+    pesquisa_emails TEXT,
+    pesquisa_erro TEXT,
+    pesquisa_atualizado_em TEXT,
+    pesquisa_resumo TEXT,
+    pesquisa_stack TEXT,
+    pesquisa_eh_software INTEGER,
     FOREIGN KEY (empresa_nao_checada_id) REFERENCES empresas_nao_checadas(id)
 );
 
