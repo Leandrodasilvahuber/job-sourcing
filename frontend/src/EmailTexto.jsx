@@ -1,14 +1,24 @@
 import { useEffect, useState } from 'react';
-import { buscarEmailTexto, salvarEmailTexto } from './api';
+import { buscarEmailAssunto, salvarEmailAssunto, buscarEmailTexto, salvarEmailTexto } from './api';
 import { formatarDataHora } from './format';
 
 export function EmailTexto() {
+  const [assunto, setAssunto] = useState('');
+  const [assuntoAtualizadoEm, setAssuntoAtualizadoEm] = useState(null);
   const [conteudo, setConteudo] = useState('');
   const [atualizadoEm, setAtualizadoEm] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState('');
 
   useEffect(() => {
+    buscarEmailAssunto()
+      .then((dados) => {
+        if (dados) {
+          setAssunto(dados.conteudo);
+          setAssuntoAtualizadoEm(dados.atualizado_em);
+        }
+      })
+      .catch(() => {});
     buscarEmailTexto()
       .then((dados) => {
         if (dados) {
@@ -21,14 +31,18 @@ export function EmailTexto() {
 
   async function handleSubmit(evento) {
     evento.preventDefault();
-    if (!conteudo.trim()) return;
+    if (!assunto.trim() || !conteudo.trim()) return;
 
     setSalvando(true);
     setMensagem('');
     try {
-      const resultado = await salvarEmailTexto(conteudo);
-      setAtualizadoEm(resultado.atualizado_em);
-      setMensagem('Texto do email salvo com sucesso.');
+      const [resultadoAssunto, resultadoTexto] = await Promise.all([
+        salvarEmailAssunto(assunto),
+        salvarEmailTexto(conteudo),
+      ]);
+      setAssuntoAtualizadoEm(resultadoAssunto.atualizado_em);
+      setAtualizadoEm(resultadoTexto.atualizado_em);
+      setMensagem('Email salvo com sucesso.');
     } catch (erro) {
       setMensagem(`Erro: ${erro.message}`);
     } finally {
@@ -39,11 +53,32 @@ export function EmailTexto() {
   return (
     <section className="card">
       <h3>Texto do email</h3>
-      {atualizadoEm && (
-        <p className="upload-status">Última atualização: {formatarDataHora(atualizadoEm)}</p>
-      )}
+
+      <label className="email-texto-rotulo" htmlFor="email-assunto">
+        Título
+        {assuntoAtualizadoEm && (
+          <span className="upload-status"> — última atualização: {formatarDataHora(assuntoAtualizadoEm)}</span>
+        )}
+      </label>
       <form onSubmit={handleSubmit} className="upload-form email-texto-form">
         <textarea
+          id="email-assunto"
+          value={assunto}
+          onChange={(e) => setAssunto(e.target.value)}
+          placeholder="Título/assunto do email…"
+          rows={2}
+          disabled={salvando}
+          required
+        />
+
+        <label className="email-texto-rotulo" htmlFor="email-corpo">
+          Corpo
+          {atualizadoEm && (
+            <span className="upload-status"> — última atualização: {formatarDataHora(atualizadoEm)}</span>
+          )}
+        </label>
+        <textarea
+          id="email-corpo"
           value={conteudo}
           onChange={(e) => setConteudo(e.target.value)}
           placeholder="Escreva o texto do email a ser enviado junto com o currículo…"
@@ -51,8 +86,9 @@ export function EmailTexto() {
           disabled={salvando}
           required
         />
+
         <button type="submit" disabled={salvando}>
-          {salvando ? 'Salvando…' : 'Salvar texto'}
+          {salvando ? 'Salvando…' : 'Salvar'}
         </button>
       </form>
       {mensagem && <p className="upload-status">{mensagem}</p>}

@@ -138,3 +138,15 @@ export function salvarEmailTexto(conteudo) {
     body: JSON.stringify({ conteudo }),
   });
 }
+
+export function buscarEmailAssunto() {
+  return requisitar(`${BASE}/email-assunto`);
+}
+
+export function salvarEmailAssunto(conteudo) {
+  return requisitar(`${BASE}/email-assunto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conteudo }),
+  });
+}

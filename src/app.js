@@ -16,6 +16,7 @@ const crawlerGoogleRoutes = require('./routes/crawlerGoogle');
 const dashboardRoutes = require('./routes/dashboard');
 const curriculoRoutes = require('./routes/curriculo');
 const emailTextoRoutes = require('./routes/emailTexto');
+const emailAssuntoRoutes = require('./routes/emailAssunto');
 
 app.use('/busca', buscaRoutes);
 app.use('/empresas', empresasRoutes);
@@ -25,6 +26,7 @@ app.use('/crawler/google', crawlerGoogleRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/curriculo', curriculoRoutes);
 app.use('/email-texto', emailTextoRoutes);
+app.use('/email-assunto', emailAssuntoRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
