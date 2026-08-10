@@ -126,6 +126,25 @@
 .tabela-empresas th:nth-child(11),
 .tabela-empresas td:nth-child(11) { width: 17%; }
 
+.tabela-confirmadas {
+  min-width: 950px;
+}
+
+.tabela-confirmadas th:nth-child(1),
+.tabela-confirmadas td:nth-child(1) { width: 14%; }
+.tabela-confirmadas th:nth-child(2),
+.tabela-confirmadas td:nth-child(2) { width: 12%; }
+.tabela-confirmadas th:nth-child(3),
+.tabela-confirmadas td:nth-child(3) { width: 16%; }
+.tabela-confirmadas th:nth-child(4),
+.tabela-confirmadas td:nth-child(4) { width: 15%; }
+.tabela-confirmadas th:nth-child(5),
+.tabela-confirmadas td:nth-child(5) { width: 8%; }
+.tabela-confirmadas th:nth-child(6),
+.tabela-confirmadas td:nth-child(6) { width: 9%; }
+.tabela-confirmadas th:nth-child(7),
+.tabela-confirmadas td:nth-child(7) { width: 26%; }
+
 .tabela-empresas .col-nome {
   font-weight: 500;
 }
