@@ -3,7 +3,7 @@ function formatarData(data) {
   return new Date(data.replace(' ', 'T')).toLocaleDateString('pt-BR');
 }
 
-export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDescartar }) {
+export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDescartar, confirmandoIds }) {
   if (erro) {
     return <p className="mensagem-erro">Erro ao carregar empresas: {erro}</p>;
   }
@@ -23,6 +23,9 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
             <th>Site</th>
             <th>Status</th>
             <th>Coletado em</th>
+            <th>Pesquisa</th>
+            <th>E-mails</th>
+            <th>Existe?</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -41,13 +44,39 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
                 <span className={`badge badge-${empresa.status}`}>{empresa.status}</span>
               </td>
               <td>{formatarData(empresa.data_coleta)}</td>
+              <td>
+                {empresa.pesquisa_status ? (
+                  <>
+                    <span className={`badge badge-pesquisa-${empresa.pesquisa_status}`}>{empresa.pesquisa_status}</span>
+                    {empresa.pesquisa_status === 'erro' && (
+                      <span className="pesquisa-erro-detalhe" title={empresa.pesquisa_erro}> ⚠</span>
+                    )}
+                  </>
+                ) : '—'}
+              </td>
+              <td>{empresa.pesquisa_emails?.length ? empresa.pesquisa_emails.join(', ') : '—'}</td>
+              <td>
+                {empresa.pesquisa_existe === null || empresa.pesquisa_existe === undefined
+                  ? '—'
+                  : (empresa.pesquisa_existe ? 'Sim' : 'Não')}
+              </td>
               <td className="col-acoes">
                 {empresa.status === 'pendente' && (
                   <>
-                    <button type="button" className="btn-confirmar" onClick={() => onConfirmar(empresa)}>
-                      Confirmar
+                    <button
+                      type="button"
+                      className="btn-confirmar"
+                      disabled={confirmandoIds?.has(empresa.id)}
+                      onClick={() => onConfirmar(empresa)}
+                    >
+                      {confirmandoIds?.has(empresa.id) ? 'Confirmando…' : 'Confirmar'}
                     </button>
-                    <button type="button" className="btn-descartar" onClick={() => onDescartar(empresa)}>
+                    <button
+                      type="button"
+                      className="btn-descartar"
+                      disabled={confirmandoIds?.has(empresa.id)}
+                      onClick={() => onDescartar(empresa)}
+                    >
                       Descartar
                     </button>
                   </>

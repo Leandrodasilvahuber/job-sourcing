@@ -171,6 +171,25 @@
   color: #991b1b;
 }
 
+.badge-pesquisa-pendente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-pesquisa-concluida {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-pesquisa-erro {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.pesquisa-erro-detalhe {
+  cursor: help;
+}
+
 .mensagem-erro {
   color: #b91c1c;
 }
@@ -200,4 +219,101 @@
   color: #1a1a1a;
   padding: 0.35rem 0.7rem;
   font-size: 0.85rem;
+}
+
+.dashboard-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.dashboard-filtro-pais {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.stat-valor {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.stat-rotulo {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.dashboard-por-fonte {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.badge-fonte {
+  background: #e0e7ff;
+  color: #3730a3;
+  text-transform: none;
+}
+
+.tabela-execucoes {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.tabela-execucoes th,
+.tabela-execucoes td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #eee;
+}
+
+.tabela-execucoes th {
+  color: #555;
+  font-weight: 600;
+  border-bottom: 2px solid #ddd;
+}
+
+.badge-execucao-em_andamento {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge-execucao-concluida {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-execucao-limite_excedido {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-execucao-erro {
+  background: #fee2e2;
+  color: #991b1b;
 }

@@ -41,17 +41,44 @@ export function enviarPrints(arquivos) {
   return requisitar(`${BASE}/busca`, { method: 'POST', body: formData });
 }
 
-// Não usa requisitar(): 409 e 429 são respostas esperadas com corpo útil
-// (motivo do bloqueio), não erros genéricos a serem descartados.
-export async function rodarCrawler() {
-  const response = await fetch(`${BASE}/crawler/run`, { method: 'POST' });
-  const corpo = await response.json().catch(() => ({}));
-  // httpStatus por último e com nome próprio: o corpo da resposta também
-  // tem um campo "status" (ex: "iniciado") que não pode sobrescrever o
-  // código HTTP real usado para decidir o que mostrar na tela.
-  return { ...corpo, httpStatus: response.status };
+// Fábrica de cliente pra cada crawler (GitHub, Google, ...), todos com a
+// mesma forma de rota: POST <base>/run e GET <base>/status.
+function criarClienteCrawler(basePath) {
+  // Não usa requisitar(): 400/409/429 são respostas esperadas com corpo útil
+  // (motivo do bloqueio), não erros genéricos a serem descartados.
+  async function rodar() {
+    const response = await fetch(`${BASE}${basePath}/run`, { method: 'POST' });
+    const corpo = await response.json().catch(() => ({}));
+    // httpStatus por último e com nome próprio: o corpo da resposta também
+    // tem um campo "status" (ex: "iniciado") que não pode sobrescrever o
+    // código HTTP real usado para decidir o que mostrar na tela.
+    return { ...corpo, httpStatus: response.status };
+  }
+
+  function status() {
+    return requisitar(`${BASE}${basePath}/status`);
+  }
+
+  return { rodar, status };
 }
 
-export function statusCrawler() {
-  return requisitar(`${BASE}/crawler/status`);
+export const clienteCrawlerGithub = criarClienteCrawler('/crawler');
+export const clienteCrawlerGoogle = criarClienteCrawler('/crawler/google');
+
+export function buscarResumoDashboard(pais) {
+  const params = new URLSearchParams();
+  if (pais) params.set('pais', pais);
+  const query = params.toString();
+  return requisitar(`${BASE}/dashboard/resumo${query ? `?${query}` : ''}`);
+}
+
+export function listarPaises() {
+  return requisitar(`${BASE}/dashboard/paises`);
+}
+
+export function listarExecucoes({ page = 1, pageSize = 10 } = {}) {
+  const params = new URLSearchParams();
+  params.set('page', page);
+  params.set('pageSize', pageSize);
+  return requisitar(`${BASE}/dashboard/execucoes?${params.toString()}`);
 }

@@ -13,6 +13,7 @@ export default defineConfig({
       '/busca': 'http://localhost:3000',
       '/envios': 'http://localhost:3000',
       '/crawler': 'http://localhost:3000',
+      '/dashboard': 'http://localhost:3000',
     },
   },
 })

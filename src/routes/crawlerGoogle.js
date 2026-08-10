@@ -5,7 +5,7 @@ const {
   garantirLimiteDisponivel,
   QuotaExcedidaError,
   CredenciaisAusentesError,
-} = require('../crawlers/googleCrawler');
+} = require('../crawlers/googleCseCrawler');
 const { salvarEmpresaColetada, empresaJaColetada } = require('../services/coletores');
 const { iniciarExecucao, concluirExecucao } = require('../services/execucoes');
 

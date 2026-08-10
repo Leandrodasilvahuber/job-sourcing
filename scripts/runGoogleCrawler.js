@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { runGoogleCrawl, garantirLimiteDisponivel, QuotaExcedidaError, CredenciaisAusentesError } = require('../src/crawlers/googleCrawler');
+const { runGoogleCrawl, garantirLimiteDisponivel, QuotaExcedidaError, CredenciaisAusentesError } = require('../src/crawlers/googleCseCrawler');
 const { salvarEmpresaColetada, empresaJaColetada } = require('../src/services/coletores');
 
 async function main() {

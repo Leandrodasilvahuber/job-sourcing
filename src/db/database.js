@@ -27,4 +27,29 @@ db.exec(`
     WHERE fonte_id IS NOT NULL
 `);
 
+const tabelaConfirmadasExiste = db.prepare(`
+  SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'empresas_confirmadas'
+`).get();
+if (tabelaConfirmadasExiste) {
+  const colunasConfirmadas = db.prepare('PRAGMA table_info(empresas_confirmadas)').all().map((c) => c.name);
+  if (!colunasConfirmadas.includes('pesquisa_status')) {
+    db.exec("ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_status TEXT DEFAULT 'pendente'");
+  }
+  if (!colunasConfirmadas.includes('pesquisa_markdown')) {
+    db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_markdown TEXT');
+  }
+  if (!colunasConfirmadas.includes('pesquisa_existe')) {
+    db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_existe INTEGER');
+  }
+  if (!colunasConfirmadas.includes('pesquisa_emails')) {
+    db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_emails TEXT');
+  }
+  if (!colunasConfirmadas.includes('pesquisa_erro')) {
+    db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_erro TEXT');
+  }
+  if (!colunasConfirmadas.includes('pesquisa_atualizado_em')) {
+    db.exec('ALTER TABLE empresas_confirmadas ADD COLUMN pesquisa_atualizado_em TEXT');
+  }
+}
+
 module.exports = db;
