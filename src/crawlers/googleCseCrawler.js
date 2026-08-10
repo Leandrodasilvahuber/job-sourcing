@@ -5,10 +5,27 @@ const { contagemAtual, incrementarUso, proximaMeiaNoiteLocal } = require('../ser
 
 const FONTE_USO = 'google_cse_gemini';
 const LIMITE_DIARIO_PADRAO = 100;
+const PAGINAS_POR_QUERY_PADRAO = 5;
+const DELAY_MIN_MS = 2500;
+const DELAY_MAX_MS = 6000;
 
 function limiteDiario() {
   const v = Number(process.env.GOOGLE_CSE_DAILY_LIMIT);
   return Number.isFinite(v) && v > 0 ? v : LIMITE_DIARIO_PADRAO;
+}
+
+function paginasPorQuery() {
+  const v = Number(process.env.GOOGLE_CSE_PAGINAS_POR_QUERY);
+  return Number.isFinite(v) && v > 0 ? Math.min(v, 10) : PAGINAS_POR_QUERY_PADRAO;
+}
+
+// Delay aleatório entre chamadas ao widget — o Google não expõe uma quota
+// visível pra esse endpoint (é o widget de embed, não a API paga), então o
+// jeito de reduzir risco de bloqueio por tráfego automatizado é espaçar as
+// chamadas de forma irregular, como um usuário real navegando entre páginas.
+function aguardarAleatorio(minMs = DELAY_MIN_MS, maxMs = DELAY_MAX_MS) {
+  const ms = minMs + Math.random() * (maxMs - minMs);
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 class QuotaExcedidaError extends Error {
@@ -97,10 +114,35 @@ function obterServidorWidget() {
   return servidorPromise;
 }
 
-// Dispara a busca no widget e aguarda o texto renderizado dos resultados.
-// Não há endpoint JSON aqui — o widget renderiza de forma assíncrona no DOM,
-// então o sinal de "pronto" é o callback searchCallbacks.web.rendered.
-async function capturarTextoBusca(query) {
+// Clica no número de página do cursor do widget (.gsc-cursor-page — não são
+// links reais, o Google liga o onclick via JS no próprio elemento) e espera
+// o próximo "rendered". Devolve false se a página não existe (query com
+// poucos resultados não preenche as 10 páginas que o widget sempre lista).
+async function irParaProximaPagina(page, numero) {
+  const elementoExiste = await page.evaluate((n) => {
+    const el = Array.from(document.querySelectorAll('.gsc-cursor-page'))
+      .find((e) => e.textContent.trim() === String(n));
+    return !!el && !el.classList.contains('gsc-cursor-current-page');
+  }, numero);
+  if (!elementoExiste) return false;
+
+  await page.evaluate(() => { window.__buscaConcluida = false; });
+  const handle = await page.evaluateHandle((n) => Array.from(document.querySelectorAll('.gsc-cursor-page'))
+    .find((e) => e.textContent.trim() === String(n)), numero);
+  const elemento = handle.asElement();
+  if (!elemento) return false;
+
+  await elemento.click();
+  await page.waitForFunction(() => window.__buscaConcluida === true, { timeout: 20000 });
+  return true;
+}
+
+// Dispara a busca no widget e aguarda o texto renderizado dos resultados,
+// paginando (clicando no cursor de páginas do widget) até `paginas` vezes ou
+// até acabarem os resultados. Não há endpoint JSON aqui — o widget renderiza
+// de forma assíncrona no DOM, então o sinal de "pronto" é o callback
+// searchCallbacks.web.rendered.
+async function capturarTextoBusca(query, { paginas = 1 } = {}) {
   const { url } = await obterServidorWidget();
   const browser = await obterBrowser();
   const page = await browser.newPage();
@@ -120,7 +162,16 @@ async function capturarTextoBusca(query) {
 
     await page.waitForFunction(() => window.__buscaConcluida === true, { timeout: 20000 });
 
-    return await page.evaluate(() => document.querySelector('#resultados')?.innerText || '');
+    const textos = [await page.evaluate(() => document.querySelector('#resultados')?.innerText || '')];
+
+    for (let numero = 2; numero <= paginas; numero += 1) {
+      await aguardarAleatorio();
+      const avancou = await irParaProximaPagina(page, numero);
+      if (!avancou) break;
+      textos.push(await page.evaluate(() => document.querySelector('#resultados')?.innerText || ''));
+    }
+
+    return textos.join('\n\n');
   } finally {
     await page.close();
   }
@@ -177,7 +228,7 @@ async function estruturarComGemini(textoBruto, query) {
 
 async function buscar(query) {
   checarAntesDeChamar();
-  const textoBruto = await capturarTextoBusca(query);
+  const textoBruto = await capturarTextoBusca(query, { paginas: paginasPorQuery() });
   const itens = await estruturarComGemini(textoBruto, query);
   incrementarUso(FONTE_USO);
   return itens;
@@ -194,16 +245,19 @@ const QUERIES = [
 ];
 
 /**
- * Orquestra a coleta. Uma busca por query (o widget não expõe paginação
- * programática de forma simples, então PAGINAS_POR_QUERY não existe mais —
- * cada query já retorna todos os itens renderizados na primeira "página").
+ * Orquestra a coleta: uma chamada a `buscar()` por query, cada uma já
+ * paginando internamente até `paginasPorQuery()` páginas do widget. O delay
+ * aleatório aqui é entre queries (a paginação já tem o seu próprio, dentro
+ * de `capturarTextoBusca`).
  */
 async function runGoogleCrawl(queries = QUERIES, { onCompany, jaColetada } = {}) {
   garantirLimiteDisponivel();
 
   const resultado = { processadas: 0, novas: 0, puladas: 0, limiteExcedido: false, resetEm: null };
 
-  for (const { texto, pais } of queries) {
+  for (const [indice, { texto, pais }] of queries.entries()) {
+    if (indice > 0) await aguardarAleatorio();
+
     let items;
     try {
       items = await buscar(texto);
@@ -257,4 +311,5 @@ module.exports = {
   QUERIES,
   FONTE_USO,
   limiteDiario,
+  paginasPorQuery,
 };
