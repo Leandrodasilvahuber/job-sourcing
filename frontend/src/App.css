@@ -63,6 +63,24 @@
   margin-top: 0.75rem;
 }
 
+.email-texto-form {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.email-texto-form textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font: inherit;
+  resize: vertical;
+}
+
+.email-texto-form button {
+  align-self: flex-start;
+}
+
 .filtros {
   display: flex;
   gap: 0.6rem;

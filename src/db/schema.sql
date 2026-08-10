@@ -86,6 +86,12 @@ CREATE TABLE IF NOT EXISTS curriculo (
     atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS email_texto (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    conteudo TEXT NOT NULL,
+    atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS uso_api_diario (
     fonte TEXT NOT NULL,
     data TEXT NOT NULL,

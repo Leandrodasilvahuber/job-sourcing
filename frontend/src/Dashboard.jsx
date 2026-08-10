@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { buscarResumoDashboard, listarPaises, listarExecucoes, buscarUsoApis } from './api';
 import { formatarDataHora, formatarReset } from './format';
 import { UploadCurriculo } from './UploadCurriculo';
+import { EmailTexto } from './EmailTexto';
 
 const ROTULO_STATUS_EXECUCAO = {
   em_andamento: 'Em andamento',
@@ -68,6 +69,7 @@ export function Dashboard({ recarregarToken }) {
   return (
     <>
       <UploadCurriculo />
+      <EmailTexto />
       <section className="card">
       <div className="dashboard-cabecalho">
         <h2>Dashboard</h2>

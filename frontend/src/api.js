@@ -126,3 +126,15 @@ export function enviarCurriculo(arquivo) {
   formData.append('curriculo', arquivo);
   return requisitar(`${BASE}/curriculo`, { method: 'POST', body: formData });
 }
+
+export function buscarEmailTexto() {
+  return requisitar(`${BASE}/email-texto`);
+}
+
+export function salvarEmailTexto(conteudo) {
+  return requisitar(`${BASE}/email-texto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conteudo }),
+  });
+}
