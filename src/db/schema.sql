@@ -9,7 +9,20 @@ CREATE TABLE IF NOT EXISTS empresas_nao_checadas (
     dados_brutos TEXT,
     motivo_duvida TEXT,
     data_coleta TEXT DEFAULT CURRENT_TIMESTAMP,
-    status TEXT DEFAULT 'pendente'
+    status TEXT DEFAULT 'pendente',
+    pais TEXT
+);
+
+CREATE TABLE IF NOT EXISTS execucoes_coleta (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fonte TEXT NOT NULL,
+    iniciado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+    finalizado_em TEXT,
+    status TEXT DEFAULT 'em_andamento',
+    processadas INTEGER DEFAULT 0,
+    novas INTEGER DEFAULT 0,
+    puladas INTEGER DEFAULT 0,
+    erro TEXT
 );
 
 CREATE TABLE IF NOT EXISTS empresas_confirmadas (
@@ -55,4 +68,11 @@ CREATE TABLE IF NOT EXISTS vagas (
     status TEXT DEFAULT 'novo',
     score REAL,
     UNIQUE(fonte, id_externo)
+);
+
+CREATE TABLE IF NOT EXISTS uso_api_diario (
+    fonte TEXT NOT NULL,
+    data TEXT NOT NULL,
+    contagem INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (fonte, data)
 );

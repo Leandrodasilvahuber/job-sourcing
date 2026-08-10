@@ -3,6 +3,7 @@ const multer = require('multer');
 const router = express.Router();
 const { extrairTexto } = require('../services/ocr');
 const { extrairEmpresasDePrint, slugify, salvarEmpresaColetada } = require('../services/coletores');
+const { iniciarExecucao, concluirExecucao } = require('../services/execucoes');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -21,6 +22,7 @@ router.post('/', upload.array('prints', 20), async (req, res) => {
     return res.status(400).json({ error: 'Envie ao menos um print no campo "prints".' });
   }
 
+  const execucaoId = iniciarExecucao('print');
   const inseridos = [];
   const duplicados = [];
   for (const arquivo of arquivos) {
@@ -47,6 +49,13 @@ router.post('/', upload.array('prints', 20), async (req, res) => {
       }
     }
   }
+
+  concluirExecucao(execucaoId, {
+    status: 'concluida',
+    processadas: inseridos.length + duplicados.length,
+    novas: inseridos.length,
+    puladas: duplicados.length,
+  });
 
   res.status(201).json({ inseridos, duplicados });
 });

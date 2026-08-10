@@ -12,11 +12,15 @@ const buscaRoutes = require('./routes/busca');
 const empresasRoutes = require('./routes/empresas');
 const enviosRoutes = require('./routes/envios');
 const crawlerRoutes = require('./routes/crawler');
+const crawlerGoogleRoutes = require('./routes/crawlerGoogle');
+const dashboardRoutes = require('./routes/dashboard');
 
 app.use('/busca', buscaRoutes);
 app.use('/empresas', empresasRoutes);
 app.use('/envios', enviosRoutes);
 app.use('/crawler', crawlerRoutes);
+app.use('/crawler/google', crawlerGoogleRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

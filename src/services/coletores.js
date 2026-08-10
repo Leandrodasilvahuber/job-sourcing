@@ -115,13 +115,13 @@ const db = require('../db/database');
 
 const inserirEmpresaColetada = db.prepare(`
   INSERT OR IGNORE INTO empresas_nao_checadas
-    (nome, site, fonte, fonte_id, descricao, localizacao, dados_brutos, motivo_duvida)
+    (nome, site, fonte, fonte_id, descricao, localizacao, dados_brutos, motivo_duvida, pais)
   VALUES
-    (@nome, @site, @fonte, @fonte_id, @descricao, @localizacao, @dados_brutos, @motivo_duvida)
+    (@nome, @site, @fonte, @fonte_id, @descricao, @localizacao, @dados_brutos, @motivo_duvida, @pais)
 `);
 
 function salvarEmpresaColetada(empresa) {
-  return inserirEmpresaColetada.run(empresa);
+  return inserirEmpresaColetada.run({ pais: null, ...empresa });
 }
 
 const buscarPorFonteEId = db.prepare(`

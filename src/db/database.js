@@ -16,6 +16,9 @@ if (tabelaExiste) {
   if (!colunasExistentes.includes('fonte_id')) {
     db.exec('ALTER TABLE empresas_nao_checadas ADD COLUMN fonte_id TEXT');
   }
+  if (!colunasExistentes.includes('pais')) {
+    db.exec('ALTER TABLE empresas_nao_checadas ADD COLUMN pais TEXT');
+  }
 }
 
 db.exec(`
