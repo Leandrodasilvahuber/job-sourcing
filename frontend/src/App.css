@@ -2,12 +2,12 @@
   display: flex;
   gap: 0.4rem;
   margin-bottom: 1.25rem;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--cor-borda);
 }
 
 .aba-botao {
   background: none;
-  color: #555;
+  color: var(--cor-texto-suave);
   border: none;
   border-radius: 6px 6px 0 0;
   padding: 0.55rem 1rem;
@@ -15,16 +15,16 @@
 }
 
 .aba-botao.aba-ativa {
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--cor-fundo-cartao);
+  color: var(--cor-texto);
   font-weight: 600;
-  border: 1px solid #ddd;
-  border-bottom: 1px solid #fff;
+  border: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-fundo-cartao);
   margin-bottom: -1px;
 }
 
 .crawler-descricao {
-  color: #555;
+  color: var(--cor-texto-suave);
   font-size: 0.88rem;
   margin-top: -0.4rem;
 }
@@ -35,19 +35,19 @@
 }
 
 .crawler-mensagem-info {
-  color: #1d4ed8;
+  color: #60a5fa;
 }
 
 .crawler-mensagem-sucesso {
-  color: #15803d;
+  color: #4ade80;
 }
 
 .crawler-mensagem-aviso {
-  color: #92400e;
+  color: #fbbf24;
 }
 
 .crawler-mensagem-erro {
-  color: #b91c1c;
+  color: #f87171;
 }
 
 .upload-form {
@@ -58,7 +58,7 @@
 }
 
 .upload-status {
-  color: #555;
+  color: var(--cor-texto-suave);
   min-height: 1.2em;
   margin-top: 0.75rem;
 }
@@ -72,7 +72,9 @@
   width: 100%;
   padding: 0.6rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--cor-borda-forte);
+  background: var(--cor-fundo-cartao);
+  color: var(--cor-texto);
   font: inherit;
   resize: vertical;
 }
@@ -84,7 +86,7 @@
 .email-texto-rotulo {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #333;
+  color: var(--cor-texto);
 }
 
 .filtros {
@@ -115,16 +117,16 @@
 .tabela-empresas td {
   text-align: left;
   padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--cor-borda);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .tabela-empresas th {
-  color: #555;
+  color: var(--cor-texto-suave);
   font-weight: 600;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--cor-borda-forte);
 }
 
 .tabela-empresas th:nth-child(1),
@@ -181,12 +183,12 @@
 .tabela-empresas td.col-acoes {
   position: sticky;
   right: 0;
-  background: #fff;
-  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.15);
+  background: var(--cor-fundo-cartao);
+  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.5);
 }
 
 .linha-carregando td.col-acoes {
-  background: #fff;
+  background: var(--cor-fundo-cartao);
 }
 
 .tabela-empresas td.col-acoes {
@@ -204,17 +206,17 @@
 }
 
 .btn-descartar {
-  background: #fff;
-  color: #b91c1c;
-  border-color: #b91c1c;
+  background: transparent;
+  color: #f87171;
+  border-color: #f87171;
   padding: 0.3rem 0.6rem;
   font-size: 0.8rem;
 }
 
 .btn-ler-descricao {
-  background: #fff;
-  color: #1a1a1a;
-  border-color: #ccc;
+  background: transparent;
+  color: var(--cor-texto);
+  border-color: var(--cor-borda-forte);
   padding: 0.3rem 0.6rem;
   font-size: 0.8rem;
 }
@@ -231,7 +233,8 @@
 }
 
 .modal-conteudo {
-  background: #fff;
+  background: var(--cor-fundo-cartao);
+  border: 1px solid var(--cor-borda);
   border-radius: 8px;
   padding: 1.25rem 1.5rem;
   max-width: 560px;
@@ -257,7 +260,7 @@
   font-size: 1.4rem;
   line-height: 1;
   padding: 0 0.25rem;
-  color: #555;
+  color: var(--cor-texto-suave);
 }
 
 .modal-descricao {
@@ -286,33 +289,33 @@
 }
 
 .badge-pendente {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
 }
 
 .badge-confirmada {
-  background: #dcfce7;
-  color: #166534;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
 }
 
 .badge-descartada {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
 }
 
 .badge-pesquisa-pendente {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
 }
 
 .badge-pesquisa-concluida {
-  background: #dcfce7;
-  color: #166534;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
 }
 
 .badge-pesquisa-erro {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
 }
 
 .pesquisa-erro-detalhe {
@@ -320,11 +323,11 @@
 }
 
 .mensagem-erro {
-  color: #b91c1c;
+  color: #f87171;
 }
 
 .mensagem-vazia {
-  color: #666;
+  color: var(--cor-texto-suave);
 }
 
 .paginacao {
@@ -335,7 +338,7 @@
   gap: 0.6rem;
   margin-top: 1rem;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--cor-texto-suave);
 }
 
 .paginacao-botoes {
@@ -344,8 +347,9 @@
 }
 
 .paginacao-botoes button {
-  background: #fff;
-  color: #1a1a1a;
+  background: transparent;
+  color: var(--cor-texto);
+  border-color: var(--cor-borda-forte);
   padding: 0.35rem 0.7rem;
   font-size: 0.85rem;
 }
@@ -363,7 +367,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--cor-texto-suave);
 }
 
 .dashboard-stats {
@@ -378,20 +382,20 @@
   flex-direction: column;
   gap: 0.2rem;
   padding: 0.9rem 1rem;
-  border: 1px solid #eee;
+  border: 1px solid var(--cor-borda);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--cor-fundo-elevado);
 }
 
 .stat-valor {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--cor-texto);
 }
 
 .stat-rotulo {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--cor-texto-suave);
 }
 
 .dashboard-por-fonte {
@@ -402,8 +406,8 @@
 }
 
 .badge-fonte {
-  background: #e0e7ff;
-  color: #3730a3;
+  background: rgba(99, 102, 241, 0.18);
+  color: #a5b4fc;
   text-transform: none;
 }
 
@@ -418,31 +422,31 @@
 .tabela-execucoes td {
   text-align: left;
   padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--cor-borda);
 }
 
 .tabela-execucoes th {
-  color: #555;
+  color: var(--cor-texto-suave);
   font-weight: 600;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--cor-borda-forte);
 }
 
 .badge-execucao-em_andamento {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
 }
 
 .badge-execucao-concluida {
-  background: #dcfce7;
-  color: #166534;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
 }
 
 .badge-execucao-limite_excedido {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
 }
 
 .badge-execucao-erro {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
 }
