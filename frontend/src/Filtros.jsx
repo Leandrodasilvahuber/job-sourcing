@@ -16,7 +16,6 @@ export function Filtros({ filtros, onChange, fontes }) {
       <select value={filtros.status} onChange={(e) => atualizar('status', e.target.value)}>
         <option value="">Todos os status</option>
         <option value="pendente">Pendente</option>
-        <option value="confirmada">Confirmada</option>
         <option value="descartada">Descartada</option>
       </select>
 
