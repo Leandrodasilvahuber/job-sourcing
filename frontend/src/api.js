@@ -116,3 +116,13 @@ export function listarExecucoes({ page = 1, pageSize = 10 } = {}) {
 export function buscarUsoApis() {
   return requisitar(`${BASE}/dashboard/uso-apis`);
 }
+
+export function buscarCurriculo() {
+  return requisitar(`${BASE}/curriculo`);
+}
+
+export function enviarCurriculo(arquivo) {
+  const formData = new FormData();
+  formData.append('curriculo', arquivo);
+  return requisitar(`${BASE}/curriculo`, { method: 'POST', body: formData });
+}

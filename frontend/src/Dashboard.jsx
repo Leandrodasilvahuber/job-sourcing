@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { buscarResumoDashboard, listarPaises, listarExecucoes, buscarUsoApis } from './api';
 import { formatarDataHora, formatarReset } from './format';
+import { UploadCurriculo } from './UploadCurriculo';
 
 const ROTULO_STATUS_EXECUCAO = {
   em_andamento: 'Em andamento',
@@ -65,7 +66,9 @@ export function Dashboard({ recarregarToken }) {
     resumo?.porStatus?.find((s) => s.status === status)?.total ?? 0;
 
   return (
-    <section className="card">
+    <>
+      <UploadCurriculo />
+      <section className="card">
       <div className="dashboard-cabecalho">
         <h2>Dashboard</h2>
         <label className="dashboard-filtro-pais">
@@ -198,6 +201,7 @@ export function Dashboard({ recarregarToken }) {
           </div>
         </div>
       )}
-    </section>
+      </section>
+    </>
   );
 }

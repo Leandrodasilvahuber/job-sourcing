@@ -79,6 +79,13 @@ CREATE TABLE IF NOT EXISTS vagas (
     UNIQUE(fonte, id_externo)
 );
 
+CREATE TABLE IF NOT EXISTS curriculo (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    nome_arquivo TEXT NOT NULL,
+    tamanho INTEGER NOT NULL,
+    atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS uso_api_diario (
     fonte TEXT NOT NULL,
     data TEXT NOT NULL,
