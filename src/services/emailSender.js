@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
+const { montarHtmlEmail } = require('./emailTemplate');
 
 const CAMINHO_CURRICULO = path.join(__dirname, '../../data/curriculo.pdf');
 
@@ -30,6 +31,7 @@ async function enviarEmailComCv({ destinatario, assunto, corpo, nomeArquivoCv })
       to: destinatario,
       subject: assunto,
       text: corpo,
+      html: montarHtmlEmail(corpo),
       attachments: [
         { filename: nomeArquivoCv || 'curriculo.pdf', path: CAMINHO_CURRICULO },
       ],
