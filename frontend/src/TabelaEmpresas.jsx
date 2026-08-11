@@ -32,7 +32,12 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
         </thead>
         <tbody>
           {empresas.map((empresa) => (
-            <tr key={empresa.id} className={carregando ? 'linha-carregando' : ''}>
+            <tr
+              key={empresa.id}
+              className={[carregando && 'linha-carregando', empresa.status === 'invalida' && 'linha-desabilitada']
+                .filter(Boolean)
+                .join(' ')}
+            >
               <td className="col-nome" title={empresa.pesquisa_resumo || empresa.descricao || ''}>{empresa.nome ?? '—'}</td>
               <td>{empresa.fonte}</td>
               <td>{empresa.localizacao ?? '—'}</td>

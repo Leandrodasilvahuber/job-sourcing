@@ -3,6 +3,7 @@ import { buscarResumoDashboard, listarPaises, listarExecucoes, buscarUsoApis } f
 import { formatarDataHora, formatarReset } from './format';
 import { UploadCurriculo } from './UploadCurriculo';
 import { EmailTexto } from './EmailTexto';
+import { ConfirmarEmMassaPanel } from './ConfirmarEmMassaPanel';
 
 const ROTULO_STATUS_EXECUCAO = {
   em_andamento: 'Em andamento',
@@ -21,7 +22,7 @@ function rotularFonte(fonte) {
   return ROTULO_FONTE[fonte] || fonte;
 }
 
-export function Dashboard({ recarregarToken }) {
+export function Dashboard({ recarregarToken, onConcluido }) {
   const [pais, setPais] = useState('');
   const [paises, setPaises] = useState([]);
   const [resumo, setResumo] = useState(null);
@@ -70,6 +71,7 @@ export function Dashboard({ recarregarToken }) {
     <>
       <UploadCurriculo />
       <EmailTexto />
+      <ConfirmarEmMassaPanel onConcluido={onConcluido} />
       <section className="card">
       <div className="dashboard-cabecalho">
         <h2>Dashboard</h2>

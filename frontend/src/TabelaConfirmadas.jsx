@@ -25,6 +25,7 @@ export function TabelaConfirmadas({ empresas, carregando, erro, onEnviarCv, envi
             <th>Localização</th>
             <th>Site</th>
             <th>E-mail</th>
+            <th>Telefone</th>
             <th>Confirmada em</th>
             <th>CV</th>
             <th>Ações</th>
@@ -41,6 +42,7 @@ export function TabelaConfirmadas({ empresas, carregando, erro, onEnviarCv, envi
                 ) : '—'}
               </td>
               <td>{empresa.contato_email ?? '—'}</td>
+              <td>{empresa.contato_outro ?? '—'}</td>
               <td>{formatarData(empresa.data_confirmacao)}</td>
               <td>
                 {empresa.cv_enviado ? (

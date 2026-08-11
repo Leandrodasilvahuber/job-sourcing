@@ -96,18 +96,12 @@ export default function App() {
   const recarregar = useCallback(() => setRecarregarToken((t) => t + 1), []);
 
   async function handleConfirmar(empresa) {
-    if (!confirm(`Confirmar "${empresa.nome}" como empresa válida?`)) return;
     setConfirmandoIds((s) => new Set(s).add(empresa.id));
     try {
-      const resultado = await confirmarEmpresa(empresa.id, {});
-      if (resultado.limiteExcedido) {
-        alert(`Limite diário de pesquisa (Gemini) atingido. Tenta de novo às ${formatarReset(resultado.resetEm)}.`);
-      } else if (!resultado.confirmada) {
-        alert(`Empresa não confirmada: ${resultado.motivo}`);
-      }
+      await confirmarEmpresa(empresa.id, {});
       recarregar();
     } catch (e) {
-      alert(`Erro ao confirmar: ${e.message}`);
+      console.error(`Erro ao confirmar "${empresa.nome}":`, e.message);
     } finally {
       setConfirmandoIds((s) => {
         const n = new Set(s);
@@ -176,7 +170,7 @@ export default function App() {
       <h1>Job Sourcing</h1>
       <Abas aba={aba} onChange={setAba} itens={ABAS} />
 
-      {aba === 'dashboard' && <Dashboard recarregarToken={recarregarToken} />}
+      {aba === 'dashboard' && <Dashboard recarregarToken={recarregarToken} onConcluido={recarregar} />}
 
       {aba === 'coletar' && (
         <>

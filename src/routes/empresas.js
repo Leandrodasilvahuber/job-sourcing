@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
-const { pesquisarEmpresa } = require('../services/pesquisaEmpresa');
-const { GeminiQuotaExcedidaError, CredenciaisGeminiAusentesError } = require('../services/gemini');
+const { visitarSite } = require('../services/visitarSite');
 
 const buscarNaoCheckadaPorId = db.prepare(`
   SELECT * FROM empresas_nao_checadas WHERE id = ?
@@ -20,6 +19,57 @@ const inserirConfirmada = db.prepare(`
 const atualizarStatusNaoCheckada = db.prepare(`
   UPDATE empresas_nao_checadas SET status = ? WHERE id = ?
 `);
+const listarPendentes = db.prepare(`
+  SELECT * FROM empresas_nao_checadas WHERE status = 'pendente'
+`);
+
+// Núcleo do fluxo de confirmação, usado tanto pela rota individual quanto
+// pela confirmação em massa: sem site, erro ao abrir o site (timeout, DNS,
+// TLS, 404/500) ou site sem nenhum e-mail encontrado — em qualquer um desses
+// casos a empresa vira 'invalida'. Só com site acessível + e-mail encontrado
+// é que confirma de fato.
+async function confirmarUmaEmpresa(empresa) {
+  if (!empresa.site) {
+    atualizarStatusNaoCheckada.run('invalida', empresa.id);
+    return { tipo: 'invalida', motivo: 'Empresa não tem site cadastrado.' };
+  }
+
+  let resultado;
+  try {
+    resultado = await visitarSite(empresa.site);
+  } catch (erro) {
+    atualizarStatusNaoCheckada.run('invalida', empresa.id);
+    return { tipo: 'invalida', motivo: `Falha ao acessar o site: ${erro.message}` };
+  }
+
+  if (resultado.emails.length === 0) {
+    atualizarStatusNaoCheckada.run('invalida', empresa.id);
+    return { tipo: 'invalida', motivo: 'Nenhum e-mail de contato encontrado no site.' };
+  }
+
+  const info = inserirConfirmada.run({
+    empresa_nao_checada_id: empresa.id,
+    nome: empresa.nome,
+    site: empresa.site,
+    contato_email: resultado.emails[0],
+    contato_outro: resultado.telefones.length > 0 ? resultado.telefones.join(', ') : null,
+    setor: null,
+    localizacao: empresa.localizacao,
+    observacoes: null,
+    pesquisa_status: null,
+    pesquisa_markdown: null,
+    pesquisa_existe: null,
+    pesquisa_eh_software: null,
+    pesquisa_stack: null,
+    pesquisa_resumo: null,
+    pesquisa_emails: JSON.stringify(resultado.emails),
+    pesquisa_erro: null,
+  });
+
+  atualizarStatusNaoCheckada.run('confirmada', empresa.id);
+
+  return { tipo: 'confirmada', id: info.lastInsertRowid, emails: resultado.emails };
+}
 
 router.get('/nao-checadas', (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
@@ -93,85 +143,65 @@ router.post('/nao-checadas/:id/confirmar', async (req, res) => {
     return res.status(404).json({ error: 'Empresa não encontrada.' });
   }
 
-  const { nome, site, contato_email, contato_outro, setor, localizacao, observacoes } = req.body;
-  const nomeFinal = nome ?? empresa.nome;
-  const siteFinal = site ?? empresa.site;
+  const resultado = await confirmarUmaEmpresa(empresa);
 
-  // A pesquisa roda ANTES de qualquer persistência: só confirmamos se ela
-  // indicar que vale a pena guardar a empresa (é de software + tem contato).
-  // Falha técnica (Gemini/crawler fora do ar, quota) é um caso distinto de
-  // "não atende os requisitos de negócio" — nenhum dos dois mexe no banco,
-  // o registro continua pendente e pode ser confirmado de novo depois.
-  let resultado;
-  try {
-    resultado = await pesquisarEmpresa({ nome: nomeFinal, site: siteFinal });
-  } catch (erro) {
-    if (erro instanceof GeminiQuotaExcedidaError) {
-      return res.status(429).json({
-        error: 'Limite excedido',
-        recurso: erro.recurso,
-        reset_em: erro.resetEm,
-      });
-    }
-    if (erro instanceof CredenciaisGeminiAusentesError) {
-      return res.status(400).json({ error: erro.message, faltando: erro.faltando });
-    }
-    return res.status(502).json({ error: `Falha ao pesquisar a empresa: ${erro.message}` });
+  if (resultado.tipo === 'invalida') {
+    return res.status(422).json({ confirmada: false, motivo: resultado.motivo });
   }
 
-  const motivos = [];
-  if (!resultado.ehEmpresaSoftware) motivos.push('não parece ser uma empresa de software');
-  if (resultado.emails.length === 0) motivos.push('nenhum e-mail de contato encontrado');
+  res.status(201).json({ confirmada: true, id: resultado.id, emails: resultado.emails });
+});
 
-  if (motivos.length > 0) {
-    return res.status(422).json({
-      confirmada: false,
-      motivo: motivos.join('; '),
-      pesquisa: {
-        existe: resultado.existe,
-        ehEmpresaSoftware: resultado.ehEmpresaSoftware,
-        stack: resultado.stack,
-        resumo: resultado.resumo,
-        emails: resultado.emails,
-        observacoes: resultado.observacoes,
-      },
-    });
+// visitarSite agora é um GET HTTP simples (sem navegador) — bem mais leve
+// que a versão anterior via Puppeteer, que chegava a saturar a CPU de uma
+// máquina de poucos núcleos mesmo em série. Dá pra ter mais concorrência.
+const CONCORRENCIA_MASSA = 10;
+let massaEmExecucao = false;
+let massaProgresso = null;
+
+async function processarEmMassa(empresas) {
+  let indice = 0;
+
+  async function worker() {
+    while (indice < empresas.length) {
+      const empresa = empresas[indice];
+      indice += 1;
+      try {
+        const resultado = await confirmarUmaEmpresa(empresa);
+        if (resultado.tipo === 'confirmada') massaProgresso.confirmadas += 1;
+        else massaProgresso.invalidas += 1;
+      } catch (erro) {
+        console.error(`Erro ao confirmar empresa ${empresa.id} em massa:`, erro);
+        massaProgresso.invalidas += 1;
+      }
+      massaProgresso.processadas += 1;
+    }
   }
 
-  const info = inserirConfirmada.run({
-    empresa_nao_checada_id: empresa.id,
-    nome: nomeFinal,
-    site: siteFinal,
-    contato_email: contato_email ?? resultado.emails[0] ?? null,
-    contato_outro: contato_outro ?? null,
-    setor: setor ?? null,
-    localizacao: localizacao ?? null,
-    observacoes: observacoes ?? null,
-    pesquisa_status: 'concluida',
-    pesquisa_markdown: resultado.markdown,
-    pesquisa_existe: resultado.existe ? 1 : 0,
-    pesquisa_eh_software: resultado.ehEmpresaSoftware ? 1 : 0,
-    pesquisa_stack: JSON.stringify(resultado.stack),
-    pesquisa_resumo: resultado.resumo,
-    pesquisa_emails: JSON.stringify(resultado.emails),
-    pesquisa_erro: null,
-  });
+  await Promise.all(Array.from({ length: CONCORRENCIA_MASSA }, worker));
+}
 
-  atualizarStatusNaoCheckada.run('confirmada', id);
+router.post('/nao-checadas/confirmar-em-massa', (req, res) => {
+  if (massaEmExecucao) {
+    return res.status(409).json({ error: 'Já existe uma confirmação em massa em andamento.' });
+  }
 
-  res.status(201).json({
-    confirmada: true,
-    id: info.lastInsertRowid,
-    pesquisa: {
-      status: 'concluida',
-      existe: resultado.existe,
-      ehEmpresaSoftware: resultado.ehEmpresaSoftware,
-      stack: resultado.stack,
-      resumo: resultado.resumo,
-      emails: resultado.emails,
-      erro: null,
-    },
+  const pendentes = listarPendentes.all();
+  if (pendentes.length === 0) {
+    return res.status(200).json({ status: 'nada_a_fazer', total: 0 });
+  }
+
+  massaEmExecucao = true;
+  massaProgresso = { total: pendentes.length, processadas: 0, confirmadas: 0, invalidas: 0 };
+  res.status(202).json({ status: 'iniciado', total: pendentes.length });
+
+  processarEmMassa(pendentes).finally(() => {
+    massaEmExecucao = false;
   });
+});
+
+router.get('/nao-checadas/confirmar-em-massa/status', (req, res) => {
+  res.json({ em_execucao: massaEmExecucao, ...massaProgresso });
 });
 
 router.get('/confirmadas', (req, res) => {

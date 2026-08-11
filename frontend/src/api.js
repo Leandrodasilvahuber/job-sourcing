@@ -34,15 +34,24 @@ export async function confirmarEmpresa(id, dados) {
   });
   const corpo = await response.json().catch(() => ({}));
   if (response.status === 422) {
-    return { confirmada: false, motivo: corpo.motivo, pesquisa: corpo.pesquisa };
-  }
-  if (response.status === 429) {
-    return { confirmada: false, limiteExcedido: true, resetEm: corpo.reset_em };
+    return { confirmada: false, motivo: corpo.motivo };
   }
   if (!response.ok) {
     throw new Error(corpo.error || `Erro ${response.status}`);
   }
   return corpo;
+}
+
+// Não usa requisitar(): 409 (já em execução) é uma resposta esperada com
+// corpo útil, não um erro genérico a ser descartado.
+export async function confirmarEmMassa() {
+  const response = await fetch(`${BASE}/empresas/nao-checadas/confirmar-em-massa`, { method: 'POST' });
+  const corpo = await response.json().catch(() => ({}));
+  return { ...corpo, httpStatus: response.status };
+}
+
+export function statusConfirmarEmMassa() {
+  return requisitar(`${BASE}/empresas/nao-checadas/confirmar-em-massa/status`);
 }
 
 export function descartarEmpresa(id) {
