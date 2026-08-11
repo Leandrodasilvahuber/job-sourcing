@@ -132,6 +132,26 @@ export default function App() {
     }
   }
 
+  // Manda um de cada vez (não em paralelo) pra não sobrecarregar o SMTP do
+  // Gmail com vários envios simultâneos pra mesma empresa.
+  async function executarEnvioCvTodos(empresa, emails) {
+    setEnviandoIds((s) => new Set(s).add(empresa.id));
+    try {
+      for (const email of emails) {
+        await enviarCv(empresa.id, email).catch((e) => {
+          console.error(`Erro ao enviar CV para "${email}":`, e.message);
+        });
+      }
+      setRecarregarToken((t) => t + 1);
+    } finally {
+      setEnviandoIds((s) => {
+        const n = new Set(s);
+        n.delete(empresa.id);
+        return n;
+      });
+    }
+  }
+
   async function handleEnviarCv(empresa) {
     const candidatos = candidatosEmail(empresa);
 
@@ -141,7 +161,6 @@ export default function App() {
     }
 
     if (candidatos.length === 1) {
-      if (!confirm(`Enviar CV para "${empresa.nome}" (${candidatos[0]})?`)) return;
       await executarEnvioCv(empresa, candidatos[0]);
       return;
     }
@@ -153,6 +172,12 @@ export default function App() {
     const { empresa } = escolhaEmail;
     setEscolhaEmail(null);
     executarEnvioCv(empresa, destinatarioEmail);
+  }
+
+  function handleEnviarTodos() {
+    const { empresa, candidatos } = escolhaEmail;
+    setEscolhaEmail(null);
+    executarEnvioCvTodos(empresa, candidatos);
   }
 
   async function handleDescartar(empresa) {
@@ -248,6 +273,7 @@ export default function App() {
           empresa={escolhaEmail.empresa}
           candidatos={escolhaEmail.candidatos}
           onEscolher={handleEscolherEmail}
+          onEnviarTodos={handleEnviarTodos}
           onFechar={() => setEscolhaEmail(null)}
         />
       )}

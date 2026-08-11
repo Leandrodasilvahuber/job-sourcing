@@ -299,6 +299,14 @@
   width: 100%;
 }
 
+.btn-enviar-todos {
+  width: 100%;
+  margin-top: 1rem;
+  background: transparent;
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda-forte);
+}
+
 .badge {
   display: inline-block;
   padding: 0.15rem 0.5rem;

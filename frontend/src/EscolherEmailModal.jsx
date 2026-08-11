@@ -1,4 +1,4 @@
-export function EscolherEmailModal({ empresa, candidatos, onEscolher, onFechar }) {
+export function EscolherEmailModal({ empresa, candidatos, onEscolher, onEnviarTodos, onFechar }) {
   return (
     <div className="modal-fundo" onClick={onFechar}>
       <div className="modal-conteudo" onClick={(e) => e.stopPropagation()}>
@@ -16,6 +16,9 @@ export function EscolherEmailModal({ empresa, candidatos, onEscolher, onFechar }
             </li>
           ))}
         </ul>
+        <button type="button" className="btn-enviar-todos" onClick={onEnviarTodos}>
+          Enviar para todos ({candidatos.length})
+        </button>
       </div>
     </div>
   );
