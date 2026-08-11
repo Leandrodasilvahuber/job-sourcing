@@ -13,7 +13,31 @@ const TEL_HREF_REGEX = /href\s*=\s*["']tel:([^"']+)["']/gi;
 const DOMINIOS_PLACEHOLDER = new Set([
   'exemplo.com', 'example.com', 'domain.com', 'yourdomain.com',
   'email.com', 'test.com', 'seudominio.com', 'seuemail.com',
+  'studio.com', 'yoursite.com', 'yourcompany.com', 'website.com', 'company.com',
 ]);
+
+// Nomes de arquivo com convenção de retina (logo@2x.png, icone@3x.jpg) batem
+// com a regex de e-mail ("o@2x.png" vira "match" válido) — filtra pela
+// extensão no lugar do TLD.
+const EXTENSOES_ARQUIVO = new Set([
+  'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'avif', 'tiff',
+  'css', 'js', 'mjs', 'json', 'xml',
+  'woff', 'woff2', 'ttf', 'eot', 'otf',
+  'mp4', 'webm', 'mp3', 'wav', 'ogg', 'avi', 'mov',
+  'pdf', 'zip', 'gz', 'map',
+]);
+
+// Domínios de terceiros (analytics, error tracking) que aparecem embutidos
+// no HTML/JS de qualquer site (ex: DSN do Sentry "hash@o123.ingest.sentry.io")
+// — não são contato da empresa, então qualquer subdomínio desses é excluído.
+const SUFIXOS_DOMINIO_TERCEIRO = [
+  'sentry.io', 'sentry-cdn.com', 'wixpress.com',
+  'google-analytics.com', 'googletagmanager.com', 'doubleclick.net',
+];
+
+function ehDominioTerceiro(dominio) {
+  return SUFIXOS_DOMINIO_TERCEIRO.some((sufixo) => dominio === sufixo || dominio.endsWith(`.${sufixo}`));
+}
 
 // Páginas reais às vezes embutem megabytes de dado (base64 de imagem/fonte
 // inline, JSON de estado da aplicação, etc.) direto no HTML — nada disso
@@ -27,7 +51,13 @@ function recortar(html) {
 function extrairEmails(html) {
   const encontrados = recortar(html).match(EMAIL_REGEX) || [];
   const unicos = [...new Set(encontrados.map((e) => e.toLowerCase()))];
-  return unicos.filter((e) => !DOMINIOS_PLACEHOLDER.has(e.split('@')[1]));
+  return unicos.filter((e) => {
+    const dominio = e.split('@')[1] || '';
+    if (DOMINIOS_PLACEHOLDER.has(dominio)) return false;
+    if (ehDominioTerceiro(dominio)) return false;
+    const extensao = dominio.split('.').pop();
+    return !EXTENSOES_ARQUIVO.has(extensao);
+  });
 }
 
 function extrairTelefones(html) {
