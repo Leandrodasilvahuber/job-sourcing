@@ -74,6 +74,18 @@ export function enviarCv(empresaId, destinatarioEmail) {
   });
 }
 
+// Não usa requisitar(): 409 (já em execução) é uma resposta esperada com
+// corpo útil, não um erro genérico a ser descartado.
+export async function enviarCvEmMassa() {
+  const response = await fetch(`${BASE}/envios/cv/em-massa`, { method: 'POST' });
+  const corpo = await response.json().catch(() => ({}));
+  return { ...corpo, httpStatus: response.status };
+}
+
+export function statusEnviarCvEmMassa() {
+  return requisitar(`${BASE}/envios/cv/em-massa/status`);
+}
+
 export function enviarPrints(arquivos) {
   const formData = new FormData();
   for (const arquivo of arquivos) formData.append('prints', arquivo);

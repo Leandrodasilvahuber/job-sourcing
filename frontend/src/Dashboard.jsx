@@ -4,6 +4,7 @@ import { formatarDataHora, formatarReset } from './format';
 import { UploadCurriculo } from './UploadCurriculo';
 import { EmailTexto } from './EmailTexto';
 import { ConfirmarEmMassaPanel } from './ConfirmarEmMassaPanel';
+import { EnviarCvEmMassaPanel } from './EnviarCvEmMassaPanel';
 
 const ROTULO_STATUS_EXECUCAO = {
   em_andamento: 'Em andamento',
@@ -72,6 +73,7 @@ export function Dashboard({ recarregarToken, onConcluido }) {
       <UploadCurriculo />
       <EmailTexto />
       <ConfirmarEmMassaPanel onConcluido={onConcluido} />
+      <EnviarCvEmMassaPanel onConcluido={onConcluido} />
       <section className="card">
       <div className="dashboard-cabecalho">
         <h2>Dashboard</h2>
