@@ -112,6 +112,10 @@ export function Dashboard({ recarregarToken, onConcluido }) {
           <span className="stat-rotulo">Descartadas</span>
         </div>
         <div className="stat-card">
+          <span className="stat-valor">{totalPorStatus('invalida')}</span>
+          <span className="stat-rotulo">Rejeitadas</span>
+        </div>
+        <div className="stat-card">
           <span className="stat-valor">{resumo?.cvsEnviados ?? '—'}</span>
           <span className="stat-rotulo">CVs enviados</span>
         </div>
