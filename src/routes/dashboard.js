@@ -31,7 +31,14 @@ router.get('/resumo', (req, res) => {
     SELECT COUNT(*) AS total FROM empresas_nao_checadas ${condicaoHoje}
   `).get(params);
 
-  res.json({ total, novasHoje, porStatus, porFonte });
+  // Não filtra por país: empresas confirmadas não têm coluna "pais" própria
+  // (só "localizacao", texto livre), e nem toda confirmada vem de uma
+  // empresa_nao_checada (ex: cadastro manual) pra herdar o país de lá.
+  const { total: cvsEnviados } = db.prepare(`
+    SELECT COUNT(DISTINCT empresa_id) AS total FROM envios WHERE canal = 'cv'
+  `).get();
+
+  res.json({ total, novasHoje, porStatus, porFonte, cvsEnviados });
 });
 
 router.get('/uso-apis', async (req, res) => {

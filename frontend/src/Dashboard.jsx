@@ -111,6 +111,10 @@ export function Dashboard({ recarregarToken, onConcluido }) {
           <span className="stat-valor">{totalPorStatus('descartada')}</span>
           <span className="stat-rotulo">Descartadas</span>
         </div>
+        <div className="stat-card">
+          <span className="stat-valor">{resumo?.cvsEnviados ?? '—'}</span>
+          <span className="stat-rotulo">CVs enviados</span>
+        </div>
       </div>
 
       {resumo?.porFonte?.length > 0 && (
