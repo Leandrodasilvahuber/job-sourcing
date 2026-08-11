@@ -58,11 +58,12 @@ export function descartarEmpresa(id) {
   return requisitar(`${BASE}/empresas/nao-checadas/${id}/descartar`, { method: 'POST' });
 }
 
-export function listarEmpresasConfirmadas({ page, pageSize, q }) {
+export function listarEmpresasConfirmadas({ page, pageSize, q, enviado }) {
   const params = new URLSearchParams();
   params.set('page', page);
   params.set('pageSize', pageSize);
   if (q) params.set('q', q);
+  if (enviado) params.set('enviado', enviado);
   return requisitar(`${BASE}/empresas/confirmadas?${params.toString()}`);
 }
 

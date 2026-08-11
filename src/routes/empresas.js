@@ -207,7 +207,7 @@ router.get('/nao-checadas/confirmar-em-massa/status', (req, res) => {
 router.get('/confirmadas', (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize, 10) || 20));
-  const { q } = req.query;
+  const { q, enviado } = req.query;
 
   const condicoes = [];
   const params = {};
@@ -215,6 +215,13 @@ router.get('/confirmadas', (req, res) => {
   if (q) {
     condicoes.push('(nome LIKE @q OR localizacao LIKE @q OR pesquisa_resumo LIKE @q)');
     params.q = `%${q}%`;
+  }
+  // Filtro por já ter recebido envio de CV precisa entrar no WHERE (não dá
+  // pra calcular depois da paginação, senão a página vem incompleta).
+  if (enviado === 'true') {
+    condicoes.push("EXISTS (SELECT 1 FROM envios e WHERE e.empresa_id = empresas_confirmadas.id AND e.canal = 'cv')");
+  } else if (enviado === 'false') {
+    condicoes.push("NOT EXISTS (SELECT 1 FROM envios e WHERE e.empresa_id = empresas_confirmadas.id AND e.canal = 'cv')");
   }
 
   const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '';

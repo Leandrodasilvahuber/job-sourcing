@@ -34,6 +34,7 @@ export default function App() {
 
   const [pageConfirmadas, setPageConfirmadas] = useState(1);
   const [qConfirmadas, setQConfirmadas] = useState('');
+  const [enviadoConfirmadas, setEnviadoConfirmadas] = useState('');
   const [resultadoConfirmadas, setResultadoConfirmadas] = useState({ data: [], total: 0, totalPages: 1 });
   const [carregandoConfirmadas, setCarregandoConfirmadas] = useState(true);
   const [erroConfirmadas, setErroConfirmadas] = useState(null);
@@ -72,14 +73,14 @@ export default function App() {
 
   useEffect(() => {
     setPageConfirmadas(1);
-  }, [qConfirmadasDebounced]);
+  }, [qConfirmadasDebounced, enviadoConfirmadas]);
 
   useEffect(() => {
     let cancelado = false;
     setCarregandoConfirmadas(true);
     setErroConfirmadas(null);
 
-    listarEmpresasConfirmadas({ page: pageConfirmadas, pageSize: 20, q: qConfirmadasDebounced })
+    listarEmpresasConfirmadas({ page: pageConfirmadas, pageSize: 20, q: qConfirmadasDebounced, enviado: enviadoConfirmadas })
       .then((dados) => {
         if (!cancelado) setResultadoConfirmadas(dados);
       })
@@ -91,7 +92,7 @@ export default function App() {
       });
 
     return () => { cancelado = true; };
-  }, [pageConfirmadas, qConfirmadasDebounced, recarregarToken]);
+  }, [pageConfirmadas, qConfirmadasDebounced, enviadoConfirmadas, recarregarToken]);
 
   const recarregar = useCallback(() => setRecarregarToken((t) => t + 1), []);
 
@@ -251,6 +252,11 @@ export default function App() {
               onChange={(e) => setQConfirmadas(e.target.value)}
               className="filtro-busca"
             />
+            <select value={enviadoConfirmadas} onChange={(e) => setEnviadoConfirmadas(e.target.value)}>
+              <option value="">Todos os envios</option>
+              <option value="true">Enviadas</option>
+              <option value="false">Não enviadas</option>
+            </select>
           </div>
           <TabelaConfirmadas
             empresas={resultadoConfirmadas.data}
