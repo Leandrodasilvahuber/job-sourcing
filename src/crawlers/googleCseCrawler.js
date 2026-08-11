@@ -45,6 +45,18 @@ class CredenciaisAusentesError extends Error {
   }
 }
 
+// O widget CSE (scraping, não a API paga) às vezes é desafiado pelo Google
+// com um reCAPTCHA antes de renderizar resultados — como é headless, nunca é
+// resolvido, e sem essa detecção o erro chegava ao usuário só como um
+// timeout genérico ("Waiting failed: 20000ms exceeded"), sem explicar a
+// causa real.
+class CaptchaBloqueadoError extends Error {
+  constructor() {
+    super('O Google bloqueou a busca automatizada com um reCAPTCHA. Tente novamente mais tarde.');
+    this.name = 'CaptchaBloqueadoError';
+  }
+}
+
 function credenciaisFaltando() {
   const faltando = [];
   if (!process.env.GOOGLE_CSE_ID) faltando.push('GOOGLE_CSE_ID');
@@ -114,6 +126,32 @@ function obterServidorWidget() {
   return servidorPromise;
 }
 
+const SELETOR_CAPTCHA = 'iframe[src*="recaptcha"], iframe[title*="recaptcha" i], .g-recaptcha';
+
+// Corre a espera pela busca terminar em paralelo com a detecção de um
+// reCAPTCHA na página — o que resolver primeiro decide o resultado. Nenhuma
+// das duas promises usa o timeout próprio do Puppeteer (que rejeitaria e
+// derrubaria a outra via Promise.race antes da hora): controlamos o prazo
+// total com nosso próprio temporizador.
+async function esperarBuscaOuCaptcha(page, timeout = 20000) {
+  const buscaPromise = page
+    .waitForFunction(() => window.__buscaConcluida === true, { timeout: 0 })
+    .then(() => 'concluida');
+  const captchaPromise = page
+    .waitForSelector(SELETOR_CAPTCHA, { timeout: 0 })
+    .then(() => 'captcha');
+  const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
+
+  const resultado = await Promise.race([buscaPromise, captchaPromise, timeoutPromise]);
+  // As promises que não venceram a corrida continuam pendentes até a página
+  // fechar — evita "unhandled rejection" quando isso as rejeita depois.
+  buscaPromise.catch(() => {});
+  captchaPromise.catch(() => {});
+
+  if (resultado === 'captcha') throw new CaptchaBloqueadoError();
+  if (resultado === 'timeout') throw new Error(`Waiting failed: ${timeout}ms exceeded`);
+}
+
 // Clica no número de página do cursor do widget (.gsc-cursor-page — não são
 // links reais, o Google liga o onclick via JS no próprio elemento) e espera
 // o próximo "rendered". Devolve false se a página não existe (query com
@@ -133,7 +171,7 @@ async function irParaProximaPagina(page, numero) {
   if (!elemento) return false;
 
   await elemento.click();
-  await page.waitForFunction(() => window.__buscaConcluida === true, { timeout: 20000 });
+  await esperarBuscaOuCaptcha(page);
   return true;
 }
 
@@ -160,7 +198,7 @@ async function capturarTextoBusca(query, { paginas = 1 } = {}) {
       google.search.cse.element.getElement('crawler').execute(q);
     }, query);
 
-    await page.waitForFunction(() => window.__buscaConcluida === true, { timeout: 20000 });
+    await esperarBuscaOuCaptcha(page);
 
     const textos = [await page.evaluate(() => document.querySelector('#resultados')?.innerText || '')];
 
@@ -308,6 +346,7 @@ module.exports = {
   runGoogleCrawl,
   QuotaExcedidaError,
   CredenciaisAusentesError,
+  CaptchaBloqueadoError,
   QUERIES,
   FONTE_USO,
   limiteDiario,

@@ -9,7 +9,7 @@ async function obterBrowser() {
   if (!browserPromise) {
     browserPromise = puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
     });
     browserPromise.then((browser) => {
       browser.on('disconnected', () => {
