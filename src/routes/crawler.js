@@ -5,6 +5,7 @@ const { salvarEmpresaColetada, empresaJaColetada } = require('../services/coleto
 const { iniciarExecucao, concluirExecucao } = require('../services/execucoes');
 
 let emExecucao = false;
+let pararSolicitado = false;
 
 router.post('/run', async (req, res) => {
   if (emExecucao) {
@@ -25,6 +26,7 @@ router.post('/run', async (req, res) => {
   }
 
   emExecucao = true;
+  pararSolicitado = false;
   res.status(202).json({ status: 'iniciado' });
 
   const execucaoId = iniciarExecucao('github');
@@ -32,6 +34,7 @@ router.post('/run', async (req, res) => {
   runGithubCrawl(['Brazil', 'Portugal'], {
     onCompany: (empresa) => salvarEmpresaColetada(empresa),
     jaColetada: empresaJaColetada,
+    deveParar: () => pararSolicitado,
   })
     .then((resultado) => {
       if (resultado.limiteExcedido) {
@@ -39,7 +42,7 @@ router.post('/run', async (req, res) => {
       }
       console.log(`Coleta finalizada: ${resultado.novas} novas, ${resultado.puladas} já existentes, ${resultado.processadas} processadas.`);
       concluirExecucao(execucaoId, {
-        status: resultado.limiteExcedido ? 'limite_excedido' : 'concluida',
+        status: resultado.limiteExcedido ? 'limite_excedido' : resultado.interrompida ? 'interrompida' : 'concluida',
         processadas: resultado.processadas,
         novas: resultado.novas,
         puladas: resultado.puladas,
@@ -51,11 +54,20 @@ router.post('/run', async (req, res) => {
     })
     .finally(() => {
       emExecucao = false;
+      pararSolicitado = false;
     });
 });
 
 router.get('/status', (req, res) => {
-  res.json({ em_execucao: emExecucao });
+  res.json({ em_execucao: emExecucao, parando: pararSolicitado });
+});
+
+router.post('/parar', (req, res) => {
+  if (!emExecucao) {
+    return res.status(409).json({ error: 'Nenhuma coleta em andamento.' });
+  }
+  pararSolicitado = true;
+  res.json({ status: 'parando' });
 });
 
 module.exports = router;

@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 
 export function CrawlerPanel({ titulo, descricao, cliente, mensagemIniciado, formatarErroLimite, onConcluido }) {
   const [emExecucao, setEmExecucao] = useState(false);
+  const [parando, setParando] = useState(false);
   const [mensagem, setMensagem] = useState(null);
   const intervaloRef = useRef(null);
 
   useEffect(() => {
-    cliente.status().then((s) => setEmExecucao(s.em_execucao)).catch(() => {});
+    cliente.status().then((s) => { setEmExecucao(s.em_execucao); setParando(!!s.parando); }).catch(() => {});
   }, [cliente]);
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export function CrawlerPanel({ titulo, descricao, cliente, mensagemIniciado, for
       try {
         const s = await cliente.status();
         setEmExecucao(s.em_execucao);
+        setParando(!!s.parando);
         if (!s.em_execucao) {
           setMensagem({ tipo: 'sucesso', texto: 'Coleta finalizada. Confira a aba Empresas.' });
           onConcluido?.();
@@ -48,13 +50,25 @@ export function CrawlerPanel({ titulo, descricao, cliente, mensagemIniciado, for
     }
   }
 
+  async function handleParar() {
+    await cliente.parar();
+    setParando(true);
+  }
+
   return (
-    <section className="card">
+    <section className="card card-acento-indigo">
       <h2>{titulo}</h2>
       <p className="crawler-descricao">{descricao}</p>
-      <button type="button" onClick={handleClick} disabled={emExecucao}>
-        {emExecucao ? 'Coleta em andamento…' : 'Rodar crawler'}
-      </button>
+      <div className="acoes-em-massa">
+        <button type="button" onClick={handleClick} disabled={emExecucao}>
+          {emExecucao ? 'Coleta em andamento…' : 'Rodar crawler'}
+        </button>
+        {emExecucao && (
+          <button type="button" className="btn-descartar" onClick={handleParar} disabled={parando}>
+            {parando ? 'Parando…' : 'Parar execução'}
+          </button>
+        )}
+      </div>
       {mensagem && <p className={`crawler-mensagem crawler-mensagem-${mensagem.tipo}`}>{mensagem.texto}</p>}
     </section>
   );

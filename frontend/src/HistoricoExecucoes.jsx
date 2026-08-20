@@ -6,6 +6,7 @@ const ROTULO_STATUS_EXECUCAO = {
   em_andamento: 'Em andamento',
   concluida: 'Concluída',
   limite_excedido: 'Limite excedido',
+  interrompida: 'Interrompida',
   erro: 'Erro',
 };
 
@@ -45,7 +46,7 @@ export function HistoricoExecucoes({ recarregarToken }) {
   }, [page, recarregarToken]);
 
   return (
-    <section className="card">
+    <section className="card card-acento-indigo">
       <h2>Histórico de execuções</h2>
       {erro && <p className="mensagem-erro">{erro}</p>}
 

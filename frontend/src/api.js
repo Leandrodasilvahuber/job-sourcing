@@ -54,6 +54,14 @@ export function statusConfirmarEmMassa() {
   return requisitar(`${BASE}/empresas/nao-checadas/confirmar-em-massa/status`);
 }
 
+// Não usa requisitar(): 409 (nada em execução pra parar) é uma resposta
+// esperada, não um erro genérico a ser descartado.
+export async function pararConfirmarEmMassa() {
+  const response = await fetch(`${BASE}/empresas/nao-checadas/confirmar-em-massa/parar`, { method: 'POST' });
+  const corpo = await response.json().catch(() => ({}));
+  return { ...corpo, httpStatus: response.status };
+}
+
 export function descartarEmpresa(id) {
   return requisitar(`${BASE}/empresas/nao-checadas/${id}/descartar`, { method: 'POST' });
 }
@@ -65,6 +73,10 @@ export function listarEmpresasConfirmadas({ page, pageSize, q, enviado }) {
   if (q) params.set('q', q);
   if (enviado) params.set('enviado', enviado);
   return requisitar(`${BASE}/empresas/confirmadas?${params.toString()}`);
+}
+
+export function visualizarEmail(empresaId) {
+  return requisitar(`${BASE}/envios/cv/preview/${empresaId}`);
 }
 
 export function enviarCv(empresaId, destinatarioEmail) {
@@ -85,6 +97,12 @@ export async function enviarCvEmMassa() {
 
 export function statusEnviarCvEmMassa() {
   return requisitar(`${BASE}/envios/cv/em-massa/status`);
+}
+
+export async function pararEnviarCvEmMassa() {
+  const response = await fetch(`${BASE}/envios/cv/em-massa/parar`, { method: 'POST' });
+  const corpo = await response.json().catch(() => ({}));
+  return { ...corpo, httpStatus: response.status };
 }
 
 export function enviarPrints(arquivos) {
@@ -111,7 +129,13 @@ function criarClienteCrawler(basePath) {
     return requisitar(`${BASE}${basePath}/status`);
   }
 
-  return { rodar, status };
+  async function parar() {
+    const response = await fetch(`${BASE}${basePath}/parar`, { method: 'POST' });
+    const corpo = await response.json().catch(() => ({}));
+    return { ...corpo, httpStatus: response.status };
+  }
+
+  return { rodar, status, parar };
 }
 
 export const clienteCrawlerGithub = criarClienteCrawler('/crawler');
@@ -167,6 +191,109 @@ export function buscarEmailAssunto() {
 
 export function salvarEmailAssunto(conteudo) {
   return requisitar(`${BASE}/email-assunto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conteudo }),
+  });
+}
+
+export function listarPrompts() {
+  return requisitar(`${BASE}/prompts`);
+}
+
+export function salvarPrompt(chave, conteudo) {
+  return requisitar(`${BASE}/prompts/${chave}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conteudo }),
+  });
+}
+
+export function restaurarPrompt(chave) {
+  return requisitar(`${BASE}/prompts/${chave}/restaurar`, { method: 'POST' });
+}
+
+export function restaurarTodosPrompts() {
+  return requisitar(`${BASE}/prompts/restaurar-tudo`, { method: 'POST' });
+}
+
+export function importarVagas(arquivo) {
+  const formData = new FormData();
+  formData.append('relatorio', arquivo);
+  return requisitar(`${BASE}/vagas/importar`, { method: 'POST', body: formData });
+}
+
+export function listarVagas({ page, pageSize, status, q }) {
+  const params = new URLSearchParams();
+  params.set('page', page);
+  params.set('pageSize', pageSize);
+  if (status) params.set('status', status);
+  if (q) params.set('q', q);
+  return requisitar(`${BASE}/vagas?${params.toString()}`);
+}
+
+// Não usa requisitar(): 422 (site/e-mail não encontrado) é uma decisão de
+// negócio esperada, não um erro de infra a ser descartado.
+export async function validarVaga(id) {
+  const response = await fetch(`${BASE}/vagas/${id}/validar`, { method: 'POST' });
+  const corpo = await response.json().catch(() => ({}));
+  if (response.status === 422) {
+    return { validada: false, motivo: corpo.motivo };
+  }
+  if (!response.ok) {
+    throw new Error(corpo.error || `Erro ${response.status}`);
+  }
+  return corpo;
+}
+
+// Não usa requisitar(): 409 (já em execução) é uma resposta esperada com
+// corpo útil, não um erro genérico a ser descartado.
+export async function validarVagasEmMassa() {
+  const response = await fetch(`${BASE}/vagas/validar-em-massa`, { method: 'POST' });
+  const corpo = await response.json().catch(() => ({}));
+  return { ...corpo, httpStatus: response.status };
+}
+
+export function statusValidarVagasEmMassa() {
+  return requisitar(`${BASE}/vagas/validar-em-massa/status`);
+}
+
+export async function pararValidarVagasEmMassa() {
+  const response = await fetch(`${BASE}/vagas/validar-em-massa/parar`, { method: 'POST' });
+  const corpo = await response.json().catch(() => ({}));
+  return { ...corpo, httpStatus: response.status };
+}
+
+export function descartarVaga(id) {
+  return requisitar(`${BASE}/vagas/${id}/descartar`, { method: 'POST' });
+}
+
+export function visualizarEmailVaga(id) {
+  return requisitar(`${BASE}/vagas/${id}/preview-email`);
+}
+
+export function enviarEmailVaga(id) {
+  return requisitar(`${BASE}/vagas/${id}/enviar-email`, { method: 'POST' });
+}
+
+export function buscarVagaEmailTexto() {
+  return requisitar(`${BASE}/vaga-email-texto`);
+}
+
+export function salvarVagaEmailTexto(conteudo) {
+  return requisitar(`${BASE}/vaga-email-texto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conteudo }),
+  });
+}
+
+export function buscarVagaEmailAssunto() {
+  return requisitar(`${BASE}/vaga-email-assunto`);
+}
+
+export function salvarVagaEmailAssunto(conteudo) {
+  return requisitar(`${BASE}/vaga-email-assunto`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ conteudo }),

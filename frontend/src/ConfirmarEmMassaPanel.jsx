@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { confirmarEmMassa, statusConfirmarEmMassa } from './api';
+import { confirmarEmMassa, statusConfirmarEmMassa, pararConfirmarEmMassa } from './api';
 
 export function ConfirmarEmMassaPanel({ onConcluido }) {
   const [progresso, setProgresso] = useState(null);
@@ -20,7 +20,7 @@ export function ConfirmarEmMassaPanel({ onConcluido }) {
         const s = await statusConfirmarEmMassa();
         setProgresso(s);
         if (!s.em_execucao) {
-          setMensagem('Confirmação em massa finalizada.');
+          setMensagem(s.interrompida ? 'Confirmação em massa interrompida.' : 'Confirmação em massa finalizada.');
           onConcluido?.();
         }
       } catch {
@@ -45,21 +45,34 @@ export function ConfirmarEmMassaPanel({ onConcluido }) {
     }
   }
 
+  async function handleParar() {
+    await pararConfirmarEmMassa();
+    setProgresso((p) => (p ? { ...p, parando: true } : p));
+  }
+
   const emExecucao = !!progresso?.em_execucao;
   const percentual = emExecucao && progresso.total > 0
     ? Math.min(100, Math.round((progresso.processadas / progresso.total) * 100))
     : 0;
 
   return (
-    <section className="card">
+    <section className="card card-acento-azul">
       <h2>Confirmar em massa</h2>
       <p className="crawler-descricao">
-        Confirma todas as empresas pendentes: abre o site de cada uma, procura e-mail de contato e tira um
-        print da página inicial. Sem site, com erro ao abrir, ou sem e-mail encontrado — a empresa vira inválida.
+        Confirma todas as empresas pendentes: acha o site oficial (se não tiver), procura e-mail de vagas
+        (ou de contato, se não achar) e extrai nome e descrição da empresa. Sem site, sem e-mail, ou sem
+        conseguir identificar nome/descrição — a empresa vira inválida.
       </p>
-      <button type="button" onClick={handleClick} disabled={emExecucao}>
-        {emExecucao ? 'Confirmando em massa…' : 'Confirmar em massa'}
-      </button>
+      <div className="acoes-em-massa">
+        <button type="button" onClick={handleClick} disabled={emExecucao}>
+          {emExecucao ? 'Confirmando em massa…' : 'Confirmar em massa'}
+        </button>
+        {emExecucao && (
+          <button type="button" className="btn-descartar" onClick={handleParar} disabled={progresso.parando}>
+            {progresso.parando ? 'Parando…' : 'Parar execução'}
+          </button>
+        )}
+      </div>
       {emExecucao && (
         <>
           <div className="barra-progresso" role="progressbar" aria-valuenow={percentual} aria-valuemin={0} aria-valuemax={100}>

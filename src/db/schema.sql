@@ -61,23 +61,39 @@ CREATE TABLE IF NOT EXISTS envios (
     FOREIGN KEY (empresa_id) REFERENCES empresas_confirmadas(id)
 );
 
+-- Vagas importadas de um relatório (empresa + título da vaga). Fluxo:
+-- pendente -> validada/invalida (validação acha site+email da empresa) ->
+-- descartada ou enviada (envio do e-mail customizado com o CV em anexo).
 CREATE TABLE IF NOT EXISTS vagas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fonte TEXT NOT NULL,
-    id_externo TEXT,
-    titulo TEXT,
-    empresa TEXT,
-    descricao TEXT,
-    url TEXT,
-    tags TEXT,
-    localizacao TEXT,
-    remoto BOOLEAN,
-    data_publicacao TEXT,
-    faixa_salarial TEXT,
-    data_coleta TEXT DEFAULT CURRENT_TIMESTAMP,
-    status TEXT DEFAULT 'novo',
-    score REAL,
-    UNIQUE(fonte, id_externo)
+    empresa_nome TEXT NOT NULL,
+    titulo TEXT NOT NULL,
+    site TEXT,
+    contato_email TEXT,
+    pesquisa_emails TEXT,
+    pesquisa_erro TEXT,
+    pesquisa_atualizado_em TEXT,
+    status TEXT DEFAULT 'pendente',
+    destinatario_email_enviado TEXT,
+    conteudo_enviado TEXT,
+    data_importacao TEXT DEFAULT CURRENT_TIMESTAMP,
+    data_envio TEXT
+);
+
+-- Mesma empresa + mesmo título de vaga não pode ser importado duas vezes
+-- (relatórios re-importados ou sobrepostos não devem duplicar a fila).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vagas_empresa_titulo ON vagas(empresa_nome, titulo);
+
+CREATE TABLE IF NOT EXISTS vaga_email_assunto (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    conteudo TEXT NOT NULL,
+    atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS vaga_email_texto (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    conteudo TEXT NOT NULL,
+    atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS curriculo (

@@ -5,6 +5,22 @@ const path = require('path');
 const dbPath = path.join(__dirname, '../../data/vagas.db');
 const db = new Database(dbPath);
 
+// A tabela `vagas` original (fonte/id_externo/empresa/...) era de um crawler
+// de vagas que nunca chegou a ser usado (nenhum código gravava nela) — foi
+// substituída pela tabela de vagas importadas de relatório (empresa_nome/
+// titulo/status/...). Como o formato mudou, dropa a tabela antiga (vazia)
+// pra deixar o CREATE TABLE IF NOT EXISTS do schema.sql recriar com a nova
+// forma.
+const tabelaVagasAntiga = db.prepare(`
+  SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'vagas'
+`).get();
+if (tabelaVagasAntiga) {
+  const colunasVagas = db.prepare('PRAGMA table_info(vagas)').all().map((c) => c.name);
+  if (colunasVagas.includes('fonte') && !colunasVagas.includes('empresa_nome')) {
+    db.exec('DROP TABLE vagas');
+  }
+}
+
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 

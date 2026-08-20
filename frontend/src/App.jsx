@@ -14,8 +14,10 @@ import { EnviarCvEmMassaPanel } from './EnviarCvEmMassaPanel';
 import { Dashboard } from './Dashboard';
 import { HistoricoExecucoes } from './HistoricoExecucoes';
 import { Configuracoes } from './Configuracoes';
+import { Prompts } from './Prompts';
 import { EscolherEmailModal } from './EscolherEmailModal';
 import { DetalhesEmpresaModal } from './DetalhesEmpresaModal';
+import { Vagas } from './Vagas';
 import './App.css';
 
 const FILTROS_INICIAIS = { q: '', status: 'pendente', fonte: '', pageSize: 20 };
@@ -24,7 +26,9 @@ const ABAS = [
   { id: 'coletar', label: 'Ações' },
   { id: 'empresas', label: 'Empresas' },
   { id: 'confirmadas', label: 'Confirmadas' },
+  { id: 'vagas', label: 'Vagas' },
   { id: 'historico', label: 'Histórico de execuções' },
+  { id: 'prompts', label: 'Prompts' },
   { id: 'configuracoes', label: 'Configurações' },
 ];
 
@@ -208,7 +212,11 @@ export default function App() {
 
       {aba === 'dashboard' && <Dashboard recarregarToken={recarregarToken} />}
 
+      {aba === 'vagas' && <Vagas recarregarToken={recarregarToken} />}
+
       {aba === 'historico' && <HistoricoExecucoes recarregarToken={recarregarToken} />}
+
+      {aba === 'prompts' && <Prompts />}
 
       {aba === 'configuracoes' && <Configuracoes />}
 
@@ -218,7 +226,7 @@ export default function App() {
           <EnviarCvEmMassaPanel onConcluido={recarregar} />
           <CrawlerPanel
             titulo="Crawler do GitHub"
-            descricao="Busca organizações de software no GitHub localizadas no Brasil e em Portugal e adiciona as novas na base."
+            descricao="Busca organizações no GitHub localizadas no Brasil e em Portugal e adiciona as novas na base."
             cliente={clienteCrawlerGithub}
             mensagemIniciado="Coleta iniciada em segundo plano (Brasil + Portugal)."
             formatarErroLimite={(r) => `Limite de requisições do GitHub excedido (${r.recurso}). Tenta de novo às ${formatarReset(r.reset_em)}.`}
@@ -237,7 +245,7 @@ export default function App() {
       )}
 
       {aba === 'empresas' && (
-        <section className="card">
+        <section className="card card-acento-ambar">
           <h2>Empresas coletadas</h2>
           <Filtros filtros={filtros} onChange={setFiltros} fontes={fontes} />
           <TabelaEmpresas
@@ -258,7 +266,7 @@ export default function App() {
       )}
 
       {aba === 'confirmadas' && (
-        <section className="card">
+        <section className="card card-acento-verde">
           <h2>Empresas confirmadas</h2>
           <div className="filtros">
             <input

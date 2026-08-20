@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { enviarCvEmMassa, statusEnviarCvEmMassa } from './api';
+import { enviarCvEmMassa, statusEnviarCvEmMassa, pararEnviarCvEmMassa } from './api';
 
 export function EnviarCvEmMassaPanel({ onConcluido }) {
   const [progresso, setProgresso] = useState(null);
@@ -20,7 +20,7 @@ export function EnviarCvEmMassaPanel({ onConcluido }) {
         const s = await statusEnviarCvEmMassa();
         setProgresso(s);
         if (!s.em_execucao) {
-          setMensagem('Envio em massa finalizado.');
+          setMensagem(s.interrompida ? 'Envio em massa interrompido.' : 'Envio em massa finalizado.');
           onConcluido?.();
         }
       } catch {
@@ -45,21 +45,33 @@ export function EnviarCvEmMassaPanel({ onConcluido }) {
     }
   }
 
+  async function handleParar() {
+    await pararEnviarCvEmMassa();
+    setProgresso((p) => (p ? { ...p, parando: true } : p));
+  }
+
   const emExecucao = !!progresso?.em_execucao;
   const percentual = emExecucao && progresso.total > 0
     ? Math.min(100, Math.round((progresso.processadas / progresso.total) * 100))
     : 0;
 
   return (
-    <section className="card">
+    <section className="card card-acento-verde">
       <h2>Enviar e-mail em massa</h2>
       <p className="crawler-descricao">
         Envia o CV pra todas as empresas confirmadas que ainda não receberam nenhum envio — pra todos os
         e-mails encontrados de cada uma, sem perguntar, com um intervalo de meio segundo entre envios.
       </p>
-      <button type="button" onClick={handleClick} disabled={emExecucao}>
-        {emExecucao ? 'Enviando em massa…' : 'Enviar e-mail em massa'}
-      </button>
+      <div className="acoes-em-massa">
+        <button type="button" onClick={handleClick} disabled={emExecucao}>
+          {emExecucao ? 'Enviando em massa…' : 'Enviar e-mail em massa'}
+        </button>
+        {emExecucao && (
+          <button type="button" className="btn-descartar" onClick={handleParar} disabled={progresso.parando}>
+            {progresso.parando ? 'Parando…' : 'Parar execução'}
+          </button>
+        )}
+      </div>
       {emExecucao && (
         <>
           <div className="barra-progresso" role="progressbar" aria-valuenow={percentual} aria-valuemin={0} aria-valuemax={100}>

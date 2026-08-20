@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { chatCompletion } = require('../services/mistral');
 
 const API_BASE = 'https://api.github.com';
 
@@ -85,18 +86,58 @@ const PAISES = {
   Portugal: 'PT',
 };
 
+function montarPromptNomeEmpresa(descricao) {
+  return `
+A descrição de uma organização do GitHub está abaixo. Tente identificar o nome da empresa por trás dessa organização (não o nome de um produto, projeto ou sigla genérica).
+
+Descrição:
+"""
+${descricao}
+"""
+
+Responda APENAS um objeto JSON no formato: {"nome": "..."} — ou {"nome": null} se o texto não mencionar nenhuma empresa.
+`.trim();
+}
+
+// Orgs sem o campo "name" preenchido no GitHub caem no login (ex: "acme-corp-br")
+// como nome de exibição — quase nunca é o nome real da empresa. Antes desse
+// fallback, tenta extrair o nome a partir da descrição da org via Mistral. Erros
+// aqui (sem credenciais, quota, resposta inválida) não devem derrubar a coleta
+// inteira: apenas volta a usar o login, como antes.
+async function tentarExtrairNomeDaDescricao(descricao) {
+  if (!descricao || !descricao.trim()) return null;
+
+  try {
+    const { texto } = await chatCompletion({
+      messages: [{ role: 'user', content: montarPromptNomeEmpresa(descricao) }],
+      responseFormat: { type: 'json_object' },
+    });
+    const dados = JSON.parse(texto);
+    const nome = typeof dados.nome === 'string' ? dados.nome.trim() : '';
+    return nome || null;
+  } catch (erro) {
+    console.error(`Erro ao tentar extrair nome da empresa a partir da descrição: ${erro.message}`);
+    return null;
+  }
+}
+
 /**
  * Orquestra a coleta. `jaColetada(login)` permite pular orgs que já estão
  * na base sem gastar quota buscando os detalhes de novo. Interrompe
  * imediatamente (sem lançar) se o limite de requisições se esgotar no meio
  * do processo, preservando o que já foi coletado até ali.
  */
-async function runGithubCrawl(locations = Object.keys(PAISES), { onCompany, jaColetada } = {}) {
+async function runGithubCrawl(locations = Object.keys(PAISES), { onCompany, jaColetada, deveParar } = {}) {
   await garantirLimiteDisponivel();
 
-  const resultado = { processadas: 0, novas: 0, puladas: 0, limiteExcedido: false, resetEm: null };
+  const resultado = { processadas: 0, novas: 0, puladas: 0, limiteExcedido: false, resetEm: null, interrompida: false };
 
   for (const location of locations) {
+    if (deveParar && deveParar()) {
+      resultado.interrompida = true;
+      return resultado;
+    }
+
     let orgs;
     try {
       orgs = await searchAllOrgsByLocation(location);
@@ -111,6 +152,10 @@ async function runGithubCrawl(locations = Object.keys(PAISES), { onCompany, jaCo
     }
 
     for (const org of orgs) {
+      if (deveParar && deveParar()) {
+        resultado.interrompida = true;
+        return resultado;
+      }
       if (jaColetada && jaColetada('github', org.login)) {
         resultado.puladas += 1;
         continue;
@@ -118,15 +163,29 @@ async function runGithubCrawl(locations = Object.keys(PAISES), { onCompany, jaCo
 
       try {
         const detalhes = await getOrgDetails(org.login);
+        const descricao = detalhes.description || detalhes.bio || null;
+
+        let nome = detalhes.name;
+        let nomeExtraidoDaDescricao = false;
+        if (!nome) {
+          nome = await tentarExtrairNomeDaDescricao(descricao);
+          nomeExtraidoDaDescricao = !!nome;
+        }
+        nome = nome || detalhes.login;
+
+        const motivos = [];
+        if (!detalhes.blog) motivos.push('Organização sem site cadastrado no GitHub — revisar manualmente.');
+        if (nomeExtraidoDaDescricao) motivos.push('Nome extraído automaticamente da descrição da organização — revisar manualmente.');
+
         const empresa = {
-          nome: detalhes.name || detalhes.login,
+          nome,
           site: detalhes.blog || null,
           fonte: 'github',
           fonte_id: detalhes.login,
-          descricao: detalhes.description || detalhes.bio || null,
+          descricao,
           localizacao: detalhes.location || location,
           dados_brutos: JSON.stringify(detalhes),
-          motivo_duvida: detalhes.blog ? null : 'Organização sem site cadastrado no GitHub — revisar manualmente.',
+          motivo_duvida: motivos.length > 0 ? motivos.join(' ') : null,
           pais: PAISES[location] || null,
         };
         resultado.processadas += 1;
@@ -154,6 +213,7 @@ module.exports = {
   getOrgDetails,
   getRateLimitStatus,
   garantirLimiteDisponivel,
+  tentarExtrairNomeDaDescricao,
   runGithubCrawl,
   RateLimitExceededError,
 };

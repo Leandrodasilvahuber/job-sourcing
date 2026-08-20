@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
 const { enviarEmailComCv } = require('../services/emailSender');
+const { personalizarEmail } = require('../services/personalizarEmail');
 
 const buscarEmpresaConfirmada = db.prepare(`
   SELECT * FROM empresas_confirmadas WHERE id = ?
@@ -26,10 +27,16 @@ const buscarEnvioPorId = db.prepare(`
 const atualizarResposta = db.prepare(`
   UPDATE envios SET resposta = ?, status = ?, data_resposta = CURRENT_TIMESTAMP WHERE id = ?
 `);
+// Processa em lotes de TAMANHO_LOTE em vez de todas de uma vez — mesmo
+// espírito do listarPendentes em empresas.js: quem já foi processado sai da
+// condição (passa a ter envio registrado), então o próximo "Enviar em
+// massa" pega o lote seguinte sozinho.
+const TAMANHO_LOTE = 100;
 // Empresas confirmadas que ainda não têm nenhum envio de CV registrado.
 const listarConfirmadasSemCv = db.prepare(`
   SELECT * FROM empresas_confirmadas ec
   WHERE NOT EXISTS (SELECT 1 FROM envios e WHERE e.empresa_id = ec.id AND e.canal = 'cv')
+  LIMIT ${TAMANHO_LOTE}
 `);
 
 function candidatosEmail(empresa) {
@@ -112,11 +119,17 @@ router.post('/cv', async (req, res) => {
     return res.status(400).json({ error: 'Nenhum currículo em PDF cadastrado. Envie um currículo no dashboard antes de enviar.' });
   }
 
+  const personalizado = await personalizarEmail({
+    assunto: assunto.conteudo,
+    corpo: texto.conteudo,
+    nomeEmpresa: empresa.nome,
+  });
+
   let info;
   try {
     info = await enviarCvParaDestinatario(empresa, destinatario_email, {
-      assunto: assunto.conteudo,
-      texto: texto.conteudo,
+      assunto: personalizado.assunto,
+      texto: personalizado.corpo,
       curriculoMeta,
     });
   } catch (erro) {
@@ -126,16 +139,57 @@ router.post('/cv', async (req, res) => {
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
+// Mesma personalização usada no envio de verdade (personalizarEmail), mas só
+// pra pré-visualizar — não manda e-mail nem grava nada em `envios`.
+router.get('/cv/preview/:empresaId', async (req, res) => {
+  const { empresaId } = req.params;
+
+  const empresa = buscarEmpresaConfirmada.get(empresaId);
+  if (!empresa) {
+    return res.status(404).json({ error: 'Empresa confirmada não encontrada.' });
+  }
+
+  const assunto = buscarAssunto.get();
+  if (!assunto?.conteudo) {
+    return res.status(400).json({ error: 'Nenhum título de email cadastrado. Cadastre o título no dashboard antes de enviar.' });
+  }
+
+  const texto = buscarTexto.get();
+  if (!texto?.conteudo) {
+    return res.status(400).json({ error: 'Nenhum texto de email cadastrado. Cadastre o texto no dashboard antes de enviar.' });
+  }
+
+  const personalizado = await personalizarEmail({
+    assunto: assunto.conteudo,
+    corpo: texto.conteudo,
+    nomeEmpresa: empresa.nome,
+  });
+
+  res.json(personalizado);
+});
+
 const ATRASO_ENTRE_ENVIOS_MS = 500;
 let envioMassaEmExecucao = false;
 let envioMassaProgresso = null;
+let envioMassaPararSolicitado = false;
 
 async function processarEnvioEmMassa(empresas, { assunto, texto, curriculoMeta }) {
   for (const empresa of empresas) {
+    if (envioMassaPararSolicitado) break;
+    // Personaliza uma vez por empresa (não por e-mail) — uma mesma empresa
+    // pode ter vários candidatos de e-mail, e o texto personalizado é o
+    // mesmo pra todos eles.
+    const personalizado = await personalizarEmail({ assunto, corpo: texto, nomeEmpresa: empresa.nome });
+
     const candidatos = candidatosEmail(empresa);
     for (const email of candidatos) {
+      if (envioMassaPararSolicitado) break;
       try {
-        await enviarCvParaDestinatario(empresa, email, { assunto, texto, curriculoMeta });
+        await enviarCvParaDestinatario(empresa, email, {
+          assunto: personalizado.assunto,
+          texto: personalizado.corpo,
+          curriculoMeta,
+        });
         envioMassaProgresso.emailsEnviados += 1;
       } catch (erro) {
         console.error(`Erro ao enviar CV pra "${email}" (empresa ${empresa.id}):`, erro.message);
@@ -171,17 +225,28 @@ router.post('/cv/em-massa', (req, res) => {
   }
 
   envioMassaEmExecucao = true;
-  envioMassaProgresso = { total: empresas.length, processadas: 0, emailsEnviados: 0, erros: 0 };
+  envioMassaPararSolicitado = false;
+  envioMassaProgresso = { total: empresas.length, processadas: 0, emailsEnviados: 0, erros: 0, interrompida: false };
   res.status(202).json({ status: 'iniciado', total: empresas.length });
 
   processarEnvioEmMassa(empresas, { assunto: assunto.conteudo, texto: texto.conteudo, curriculoMeta })
     .finally(() => {
+      envioMassaProgresso.interrompida = envioMassaPararSolicitado;
       envioMassaEmExecucao = false;
+      envioMassaPararSolicitado = false;
     });
 });
 
 router.get('/cv/em-massa/status', (req, res) => {
-  res.json({ em_execucao: envioMassaEmExecucao, ...envioMassaProgresso });
+  res.json({ em_execucao: envioMassaEmExecucao, parando: envioMassaPararSolicitado, ...envioMassaProgresso });
+});
+
+router.post('/cv/em-massa/parar', (req, res) => {
+  if (!envioMassaEmExecucao) {
+    return res.status(409).json({ error: 'Nenhum envio em massa em andamento.' });
+  }
+  envioMassaPararSolicitado = true;
+  res.json({ status: 'parando' });
 });
 
 router.patch('/:id/resposta', (req, res) => {

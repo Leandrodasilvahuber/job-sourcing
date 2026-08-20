@@ -149,18 +149,20 @@ router.post('/nao-checadas/:id/confirmar', async (req, res) => {
   res.status(201).json({ confirmada: true, id: resultado.id, emails: resultado.emails });
 });
 
-// visitarSite agora é um GET HTTP simples (sem navegador) — bem mais leve
-// que a versão anterior via Puppeteer, que chegava a saturar a CPU de uma
-// máquina de poucos núcleos mesmo em série. Dá pra ter mais concorrência.
-const CONCORRENCIA_MASSA = 10;
+// O pipeline de confirmação agora faz até 5 chamadas de IA (Mistral) + até 3
+// fetches por empresa — bem mais pesado que o GET simples de antes, então a
+// concorrência precisa ser bem mais conservadora pra não estourar rate limit.
+const CONCORRENCIA_MASSA = 2;
 let massaEmExecucao = false;
 let massaProgresso = null;
+let massaPararSolicitado = false;
 
 async function processarEmMassa(empresas) {
   let indice = 0;
 
   async function worker() {
     while (indice < empresas.length) {
+      if (massaPararSolicitado) break;
       const empresa = empresas[indice];
       indice += 1;
       try {
@@ -189,16 +191,27 @@ router.post('/nao-checadas/confirmar-em-massa', (req, res) => {
   }
 
   massaEmExecucao = true;
-  massaProgresso = { total: pendentes.length, processadas: 0, confirmadas: 0, invalidas: 0 };
+  massaPararSolicitado = false;
+  massaProgresso = { total: pendentes.length, processadas: 0, confirmadas: 0, invalidas: 0, interrompida: false };
   res.status(202).json({ status: 'iniciado', total: pendentes.length });
 
   processarEmMassa(pendentes).finally(() => {
+    massaProgresso.interrompida = massaPararSolicitado;
     massaEmExecucao = false;
+    massaPararSolicitado = false;
   });
 });
 
 router.get('/nao-checadas/confirmar-em-massa/status', (req, res) => {
-  res.json({ em_execucao: massaEmExecucao, ...massaProgresso });
+  res.json({ em_execucao: massaEmExecucao, parando: massaPararSolicitado, ...massaProgresso });
+});
+
+router.post('/nao-checadas/confirmar-em-massa/parar', (req, res) => {
+  if (!massaEmExecucao) {
+    return res.status(409).json({ error: 'Nenhuma confirmação em massa em andamento.' });
+  }
+  massaPararSolicitado = true;
+  res.json({ status: 'parando' });
 });
 
 router.get('/confirmadas', (req, res) => {

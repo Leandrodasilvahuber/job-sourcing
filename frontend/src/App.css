@@ -1,5 +1,6 @@
 .abas {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   margin-bottom: 1.25rem;
   border-bottom: 1px solid var(--cor-borda);
@@ -12,6 +13,14 @@
   border-radius: 6px 6px 0 0;
   padding: 0.55rem 1rem;
   font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .aba-botao {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.82rem;
+  }
 }
 
 .aba-botao.aba-ativa {
@@ -19,8 +28,7 @@
   color: var(--cor-texto);
   font-weight: 600;
   border: 1px solid var(--cor-borda);
-  border-bottom: 1px solid var(--cor-fundo-cartao);
-  margin-bottom: -1px;
+  border-radius: 6px;
 }
 
 .crawler-descricao {
@@ -48,6 +56,12 @@
 
 .crawler-mensagem-erro {
   color: #f87171;
+}
+
+.acoes-em-massa {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .barra-progresso {
@@ -122,7 +136,7 @@
 
 .tabela-empresas {
   width: 100%;
-  min-width: 1000px;
+  min-width: 760px;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.88rem;
@@ -145,30 +159,48 @@
 }
 
 .tabela-empresas th:nth-child(1),
-.tabela-empresas td:nth-child(1) { width: 10%; }
+.tabela-empresas td:nth-child(1) { width: 12%; }
 .tabela-empresas th:nth-child(2),
-.tabela-empresas td:nth-child(2) { width: 6%; }
+.tabela-empresas td:nth-child(2) { width: 7%; }
 .tabela-empresas th:nth-child(3),
-.tabela-empresas td:nth-child(3) { width: 9%; }
+.tabela-empresas td:nth-child(3) { width: 10%; }
 .tabela-empresas th:nth-child(4),
-.tabela-empresas td:nth-child(4) { width: 15%; }
+.tabela-empresas td:nth-child(4) { width: 18%; }
 .tabela-empresas th:nth-child(5),
-.tabela-empresas td:nth-child(5) { width: 6%; }
+.tabela-empresas td:nth-child(5) { width: 9%; }
 .tabela-empresas th:nth-child(6),
 .tabela-empresas td:nth-child(6) { width: 8%; }
 .tabela-empresas th:nth-child(7),
-.tabela-empresas td:nth-child(7) { width: 7%; }
+.tabela-empresas td:nth-child(7) { width: 10%; }
 .tabela-empresas th:nth-child(8),
-.tabela-empresas td:nth-child(8) { width: 9%; }
+.tabela-empresas td:nth-child(8) { width: 6%; }
 .tabela-empresas th:nth-child(9),
-.tabela-empresas td:nth-child(9) { width: 8%; }
-.tabela-empresas th:nth-child(10),
-.tabela-empresas td:nth-child(10) { width: 5%; }
-.tabela-empresas th:nth-child(11),
-.tabela-empresas td:nth-child(11) { width: 17%; }
+.tabela-empresas td:nth-child(9) { width: 20%; }
 
 .tabela-confirmadas {
   min-width: 950px;
+}
+
+.tabela-vagas {
+  min-width: 900px;
+}
+
+.tabela-vagas th:nth-child(1),
+.tabela-vagas td:nth-child(1) { width: 16%; }
+.tabela-vagas th:nth-child(2),
+.tabela-vagas td:nth-child(2) { width: 28%; }
+.tabela-vagas th:nth-child(3),
+.tabela-vagas td:nth-child(3) { width: 20%; }
+.tabela-vagas th:nth-child(4),
+.tabela-vagas td:nth-child(4) { width: 10%; }
+.tabela-vagas th:nth-child(5),
+.tabela-vagas td:nth-child(5) { width: 26%; }
+
+.tabela-vagas td:nth-child(2),
+.tabela-vagas td:nth-child(3) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .tabela-confirmadas th:nth-child(1),
@@ -212,9 +244,94 @@
 
 .tabela-empresas td.col-acoes {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
-  white-space: nowrap;
   overflow: visible;
+}
+
+/* Abaixo do breakpoint, a tabela vira uma lista de cartões (uma linha =
+   um cartão, cada célula rotulada por data-label) em vez de rolar na
+   horizontal — assim todas as colunas ficam visíveis na tela, mesmo em
+   telas estreitas. */
+@media (max-width: 860px) {
+  .tabela-wrapper {
+    overflow-x: visible;
+  }
+
+  .tabela-empresas,
+  .tabela-confirmadas,
+  .tabela-execucoes {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .tabela-empresas thead,
+  .tabela-execucoes thead {
+    display: none;
+  }
+
+  .tabela-empresas tbody tr,
+  .tabela-execucoes tbody tr {
+    display: block;
+    margin-bottom: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+  }
+
+  .tabela-empresas td,
+  .tabela-execucoes td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: auto !important;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    border-bottom: 1px solid var(--cor-borda);
+    padding: 0.4rem 0;
+  }
+
+  /* Valor comprido (URL, e-mail, lista de stack) precisa poder quebrar —
+     senão estoura a largura do cartão e força rolagem horizontal na
+     página inteira, já que o rótulo (::before) e o valor dividem espaço
+     num flex row. */
+  .tabela-empresas td,
+  .tabela-execucoes td {
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
+  .tabela-empresas tr:last-child td:last-child,
+  .tabela-execucoes tr:last-child td:last-child {
+    border-bottom: none;
+  }
+
+  .tabela-empresas td::before,
+  .tabela-execucoes td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--cor-texto-suave);
+    flex-shrink: 0;
+    margin-right: 0.75rem;
+  }
+
+  .tabela-empresas th:last-child,
+  .tabela-empresas td.col-acoes {
+    position: static;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .tabela-empresas td.col-acoes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tabela-empresas td.col-acoes::before {
+    margin-bottom: 0.3rem;
+  }
 }
 
 .btn-confirmar {
@@ -232,7 +349,8 @@
   font-size: 0.8rem;
 }
 
-.btn-ler-descricao {
+.btn-ler-descricao,
+.btn-visualizar-email {
   background: transparent;
   color: var(--cor-texto);
   border-color: var(--cor-borda-forte);
@@ -284,6 +402,60 @@
 
 .modal-descricao {
   white-space: pre-wrap;
+}
+
+.detalhes-empresa {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 0.75rem;
+  margin: 0.75rem 0 0;
+}
+
+.detalhes-empresa dt {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.detalhes-empresa dd {
+  margin: 0;
+}
+
+.modal-motivo-duvida {
+  color: #d97706;
+}
+
+.detalhes-dados-brutos {
+  margin-top: 1rem;
+}
+
+.detalhes-dados-brutos summary {
+  cursor: pointer;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.detalhes-dados-brutos pre {
+  margin-top: 0.5rem;
+  max-height: 240px;
+  overflow: auto;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modal-acoes {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.modal-acoes .btn-confirmar,
+.modal-acoes .btn-descartar {
+  flex: 1;
 }
 
 .lista-escolha-email {
@@ -415,6 +587,7 @@
   gap: 0.2rem;
   padding: 0.9rem 1rem;
   border: 1px solid var(--cor-borda);
+  border-left: 3px solid var(--cor-borda-forte);
   border-radius: 8px;
   background: var(--cor-fundo-elevado);
 }
@@ -430,11 +603,218 @@
   color: var(--cor-texto-suave);
 }
 
-.dashboard-por-fonte {
+/* Linha de KPIs principais: cards maiores e com cor de destaque, pra
+   chamar mais atenção que as métricas secundárias abaixo. */
+.dashboard-stats-principais .stat-card {
+  padding: 1.1rem 1.25rem;
+}
+
+.dashboard-stats-principais .stat-valor {
+  font-size: 2rem;
+}
+
+.dashboard-stats-secundarias {
+  margin-top: 0;
+}
+
+.dashboard-stats-secundarias .stat-card {
+  padding: 0.7rem 0.9rem;
+}
+
+.dashboard-stats-secundarias .stat-valor {
+  font-size: 1.25rem;
+}
+
+.stat-card-destaque {
+  border-left-color: var(--cor-acento);
+}
+
+.stat-card-destaque .stat-valor {
+  color: #93c5fd;
+}
+
+.stat-card-sucesso {
+  border-left-color: #22c55e;
+}
+
+.stat-card-sucesso .stat-valor {
+  color: #4ade80;
+}
+
+.stat-card-alerta {
+  border-left-color: #f59e0b;
+}
+
+.stat-card-alerta .stat-valor {
+  color: #fbbf24;
+}
+
+.stat-card-perigo {
+  border-left-color: #ef4444;
+}
+
+.stat-card-perigo .stat-valor {
+  color: #f87171;
+}
+
+.stat-card-info {
+  border-left-color: #6366f1;
+}
+
+.stat-card-info .stat-valor {
+  color: #a5b4fc;
+}
+
+.dashboard-secao-titulo {
+  margin-top: 0;
+}
+
+/* Borda de destaque à esquerda dos cards de ação, pra sinalizar o tipo
+   de operação de relance (mesma linguagem visual dos stat-cards). */
+.card-acento-azul {
+  border-left: 3px solid #3b82f6;
+}
+
+.card-acento-verde {
+  border-left: 3px solid #22c55e;
+}
+
+.card-acento-ambar {
+  border-left: 3px solid #f59e0b;
+}
+
+.card-acento-indigo {
+  border-left: 3px solid #6366f1;
+}
+
+.card-acento-vermelho {
+  border-left: 3px solid #ef4444;
+}
+
+.prompt-cabecalho {
   display: flex;
-  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.prompt-placeholders {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0.75rem;
+  display: flex;
   flex-wrap: wrap;
-  margin-bottom: 1.25rem;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.prompt-placeholder-tag {
+  background: var(--cor-fundo-elevado);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.8rem;
+  color: #a5b4fc;
+}
+
+.prompt-acoes {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-restaurar {
+  background: transparent;
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda-forte);
+}
+
+.dashboard-graficos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard-graficos .card {
+  margin-bottom: 0;
+}
+
+.grafico-donut-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.grafico-donut-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  fill: var(--cor-texto);
+}
+
+.grafico-donut-legenda-central {
+  font-size: 0.7rem;
+  fill: var(--cor-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.grafico-legenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--cor-texto);
+}
+
+.grafico-legenda-cor {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 0.5rem;
+}
+
+.grafico-barras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.grafico-barra-linha {
+  display: grid;
+  grid-template-columns: 110px 1fr 40px;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.grafico-barra-rotulo {
+  color: var(--cor-texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grafico-barra-trilho {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--cor-borda);
+  overflow: hidden;
+}
+
+.grafico-barra-preenchimento {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
+.grafico-barra-valor {
+  text-align: right;
+  font-weight: 600;
 }
 
 .badge-fonte {
@@ -474,6 +854,11 @@
 }
 
 .badge-execucao-limite_excedido {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.badge-execucao-interrompida {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
 }
