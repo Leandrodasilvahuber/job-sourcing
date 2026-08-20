@@ -51,8 +51,8 @@ export function EmailTexto() {
   }
 
   return (
-    <section className="card">
-      <h3>Texto do email</h3>
+    <section className="card card-acento-indigo">
+      <h2>Texto do email</h2>
 
       <label className="email-texto-rotulo" htmlFor="email-assunto">
         Título
@@ -82,7 +82,7 @@ export function EmailTexto() {
           value={conteudo}
           onChange={(e) => setConteudo(e.target.value)}
           placeholder="Escreva o texto do email a ser enviado junto com o currículo…"
-          rows={8}
+          rows={14}
           disabled={salvando}
           required
         />

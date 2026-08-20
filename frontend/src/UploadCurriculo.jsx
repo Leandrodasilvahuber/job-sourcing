@@ -31,8 +31,8 @@ export function UploadCurriculo() {
   }
 
   return (
-    <section className="card">
-      <h3>Currículo (PDF)</h3>
+    <section className="card card-acento-indigo">
+      <h2>Currículo (PDF)</h2>
       {curriculo ? (
         <p className="upload-status">
           Atual: <a href="/curriculo/download" target="_blank" rel="noreferrer">{curriculo.nome_arquivo}</a>

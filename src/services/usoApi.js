@@ -16,10 +16,16 @@ function contagemAtual(fonte) {
 }
 
 function incrementarUso(fonte) {
+  incrementarUsoEm(fonte, 1);
+}
+
+// Mesma tabela/contador, mas soma uma quantidade arbitrária em vez de +1 —
+// usado pra somar tokens (não chamadas) de uso do Mistral.
+function incrementarUsoEm(fonte, quantidade) {
   db.prepare(`
-    INSERT INTO uso_api_diario (fonte, data, contagem) VALUES (?, ?, 1)
-    ON CONFLICT(fonte, data) DO UPDATE SET contagem = contagem + 1
-  `).run(fonte, dataLocalHoje());
+    INSERT INTO uso_api_diario (fonte, data, contagem) VALUES (?, ?, ?)
+    ON CONFLICT(fonte, data) DO UPDATE SET contagem = contagem + excluded.contagem
+  `).run(fonte, dataLocalHoje(), quantidade);
 }
 
 // Usado quando a própria API já recusou a chamada por quota (ex: 429) mas
@@ -43,4 +49,4 @@ function proximaMeiaNoiteLocal() {
   return d;
 }
 
-module.exports = { dataLocalHoje, contagemAtual, incrementarUso, marcarEsgotado, proximaMeiaNoiteLocal };
+module.exports = { dataLocalHoje, contagemAtual, incrementarUso, incrementarUsoEm, marcarEsgotado, proximaMeiaNoiteLocal };

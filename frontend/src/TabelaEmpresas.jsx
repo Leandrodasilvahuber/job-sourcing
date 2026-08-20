@@ -3,7 +3,7 @@ function formatarData(data) {
   return new Date(data.replace(' ', 'T')).toLocaleDateString('pt-BR');
 }
 
-export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDescartar, confirmandoIds }) {
+export function TabelaEmpresas({ empresas, carregando, erro, onAbrirDetalhes, onDescartar, confirmandoIds }) {
   if (erro) {
     return <p className="mensagem-erro">Erro ao carregar empresas: {erro}</p>;
   }
@@ -21,11 +21,9 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
             <th>Fonte</th>
             <th>Localização</th>
             <th>Site</th>
-            <th>Status</th>
             <th>Coletado em</th>
             <th>Pesquisa</th>
             <th>E-mails</th>
-            <th>Stack</th>
             <th>Existe?</th>
             <th>Ações</th>
           </tr>
@@ -38,19 +36,16 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
                 .filter(Boolean)
                 .join(' ')}
             >
-              <td className="col-nome" title={empresa.pesquisa_resumo || empresa.descricao || ''}>{empresa.nome ?? '—'}</td>
-              <td>{empresa.fonte}</td>
-              <td>{empresa.localizacao ?? '—'}</td>
-              <td>
+              <td className="col-nome" data-label="Nome" title={empresa.pesquisa_resumo || empresa.descricao || ''}>{empresa.nome ?? '—'}</td>
+              <td data-label="Fonte">{empresa.fonte}</td>
+              <td data-label="Localização">{empresa.localizacao ?? '—'}</td>
+              <td data-label="Site">
                 {empresa.site ? (
                   <a href={empresa.site} target="_blank" rel="noreferrer">{empresa.site}</a>
                 ) : '—'}
               </td>
-              <td>
-                <span className={`badge badge-${empresa.status}`}>{empresa.status}</span>
-              </td>
-              <td>{formatarData(empresa.data_coleta)}</td>
-              <td>
+              <td data-label="Coletado em">{formatarData(empresa.data_coleta)}</td>
+              <td data-label="Pesquisa">
                 {empresa.pesquisa_status ? (
                   <>
                     <span className={`badge badge-pesquisa-${empresa.pesquisa_status}`}>{empresa.pesquisa_status}</span>
@@ -60,25 +55,22 @@ export function TabelaEmpresas({ empresas, carregando, erro, onConfirmar, onDesc
                   </>
                 ) : '—'}
               </td>
-              <td>{empresa.pesquisa_emails?.length ? empresa.pesquisa_emails.join(', ') : '—'}</td>
-              <td className="col-stack" title={empresa.pesquisa_stack?.length ? empresa.pesquisa_stack.join(', ') : ''}>
-                {empresa.pesquisa_stack?.length ? empresa.pesquisa_stack.join(', ') : '—'}
-              </td>
-              <td>
+              <td data-label="E-mails">{empresa.pesquisa_emails?.length ? empresa.pesquisa_emails.join(', ') : '—'}</td>
+              <td data-label="Existe?">
                 {empresa.pesquisa_existe === null || empresa.pesquisa_existe === undefined
                   ? '—'
                   : (empresa.pesquisa_existe ? 'Sim' : 'Não')}
               </td>
-              <td className="col-acoes">
+              <td className="col-acoes" data-label="Ações">
                 {empresa.status === 'pendente' && (
                   <>
                     <button
                       type="button"
                       className="btn-confirmar"
                       disabled={confirmandoIds?.has(empresa.id)}
-                      onClick={() => onConfirmar(empresa)}
+                      onClick={() => onAbrirDetalhes(empresa)}
                     >
-                      {confirmandoIds?.has(empresa.id) ? 'Confirmando…' : 'Confirmar'}
+                      {confirmandoIds?.has(empresa.id) ? 'Confirmando…' : 'Ver detalhes'}
                     </button>
                     <button
                       type="button"

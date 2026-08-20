@@ -99,6 +99,12 @@ CREATE TABLE IF NOT EXISTS email_texto (
     atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS prompts (
+    chave TEXT PRIMARY KEY,
+    conteudo TEXT NOT NULL,
+    atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS uso_api_diario (
     fonte TEXT NOT NULL,
     data TEXT NOT NULL,

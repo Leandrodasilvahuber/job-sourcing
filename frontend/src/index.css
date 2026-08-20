@@ -21,6 +21,7 @@ body {
   padding: 0 1rem;
   color: var(--cor-texto);
   background: var(--cor-fundo);
+  overflow-x: hidden;
 }
 
 h1 {

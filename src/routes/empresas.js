@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
-const { visitarSite } = require('../services/visitarSite');
+const { confirmarComMistral } = require('../services/pesquisaEmpresa');
 
 const buscarNaoCheckadaPorId = db.prepare(`
   SELECT * FROM empresas_nao_checadas WHERE id = ?
@@ -19,56 +19,53 @@ const inserirConfirmada = db.prepare(`
 const atualizarStatusNaoCheckada = db.prepare(`
   UPDATE empresas_nao_checadas SET status = ? WHERE id = ?
 `);
+// Processa em lotes de TAMANHO_LOTE em vez da fila inteira de uma vez — com
+// o pipeline de Mistral levando até dezenas de segundos por empresa, uma
+// fila de milhares processaria por dias sem checkpoint nenhum; em lotes de
+// 100 dá pra acompanhar o progresso e a próxima "Confirmar em massa" pega o
+// lote seguinte automaticamente (quem já foi processado sai do status
+// 'pendente', então não repete).
+const TAMANHO_LOTE = 100;
 const listarPendentes = db.prepare(`
-  SELECT * FROM empresas_nao_checadas WHERE status = 'pendente'
+  SELECT * FROM empresas_nao_checadas WHERE status = 'pendente' LIMIT ${TAMANHO_LOTE}
 `);
 
 // Núcleo do fluxo de confirmação, usado tanto pela rota individual quanto
-// pela confirmação em massa: sem site, erro ao abrir o site (timeout, DNS,
-// TLS, 404/500) ou site sem nenhum e-mail encontrado — em qualquer um desses
-// casos a empresa vira 'invalida'. Só com site acessível + e-mail encontrado
-// é que confirma de fato.
+// pela confirmação em massa: roda o pipeline de 5 passos do Mistral
+// (src/services/pesquisaEmpresa.js) — busca a URL do site (se não tiver),
+// abre o site, procura e-mail de vagas (cai pra e-mail de contato geral se
+// não achar) e extrai nome + descrição da empresa. E-mail, nome e descrição
+// são todos obrigatórios: falta de qualquer um vira 'invalida'.
 async function confirmarUmaEmpresa(empresa) {
-  if (!empresa.site) {
-    atualizarStatusNaoCheckada.run('invalida', empresa.id);
-    return { tipo: 'invalida', motivo: 'Empresa não tem site cadastrado.' };
-  }
+  const resultado = await confirmarComMistral(empresa);
 
-  let resultado;
-  try {
-    resultado = await visitarSite(empresa.site);
-  } catch (erro) {
+  if (resultado.tipo === 'invalida') {
     atualizarStatusNaoCheckada.run('invalida', empresa.id);
-    return { tipo: 'invalida', motivo: `Falha ao acessar o site: ${erro.message}` };
-  }
-
-  if (resultado.emails.length === 0) {
-    atualizarStatusNaoCheckada.run('invalida', empresa.id);
-    return { tipo: 'invalida', motivo: 'Nenhum e-mail de contato encontrado no site.' };
+    return { tipo: 'invalida', motivo: resultado.motivo };
   }
 
   const info = inserirConfirmada.run({
     empresa_nao_checada_id: empresa.id,
-    nome: empresa.nome,
-    site: empresa.site,
-    contato_email: resultado.emails[0],
-    contato_outro: resultado.telefones.length > 0 ? resultado.telefones.join(', ') : null,
+    nome: resultado.nome,
+    site: resultado.site,
+    contato_email: resultado.email,
+    contato_outro: null,
     setor: null,
     localizacao: empresa.localizacao,
     observacoes: null,
-    pesquisa_status: null,
+    pesquisa_status: 'concluida',
     pesquisa_markdown: null,
-    pesquisa_existe: null,
+    pesquisa_existe: 1,
     pesquisa_eh_software: null,
     pesquisa_stack: null,
-    pesquisa_resumo: null,
-    pesquisa_emails: JSON.stringify(resultado.emails),
+    pesquisa_resumo: resultado.descricao,
+    pesquisa_emails: JSON.stringify([resultado.email]),
     pesquisa_erro: null,
   });
 
   atualizarStatusNaoCheckada.run('confirmada', empresa.id);
 
-  return { tipo: 'confirmada', id: info.lastInsertRowid, emails: resultado.emails };
+  return { tipo: 'confirmada', id: info.lastInsertRowid, emails: [resultado.email] };
 }
 
 router.get('/nao-checadas', (req, res) => {

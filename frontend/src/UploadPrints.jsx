@@ -26,7 +26,7 @@ export function UploadPrints({ onConcluido }) {
   }
 
   return (
-    <section className="card">
+    <section className="card card-acento-indigo">
       <h2>Enviar prints</h2>
       <form onSubmit={handleSubmit} className="upload-form">
         <input type="file" name="prints" accept="image/*" multiple required disabled={enviando} />
