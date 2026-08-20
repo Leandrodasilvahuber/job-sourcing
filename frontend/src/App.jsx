@@ -9,16 +9,23 @@ import { TabelaConfirmadas } from './TabelaConfirmadas';
 import { Paginacao } from './Paginacao';
 import { UploadPrints } from './UploadPrints';
 import { CrawlerPanel } from './CrawlerPanel';
+import { ConfirmarEmMassaPanel } from './ConfirmarEmMassaPanel';
+import { EnviarCvEmMassaPanel } from './EnviarCvEmMassaPanel';
 import { Dashboard } from './Dashboard';
+import { HistoricoExecucoes } from './HistoricoExecucoes';
+import { Configuracoes } from './Configuracoes';
 import { EscolherEmailModal } from './EscolherEmailModal';
+import { DetalhesEmpresaModal } from './DetalhesEmpresaModal';
 import './App.css';
 
 const FILTROS_INICIAIS = { q: '', status: 'pendente', fonte: '', pageSize: 20 };
 const ABAS = [
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'coletar', label: 'Buscar / Coletar' },
+  { id: 'coletar', label: 'Ações' },
   { id: 'empresas', label: 'Empresas' },
   { id: 'confirmadas', label: 'Confirmadas' },
+  { id: 'historico', label: 'Histórico de execuções' },
+  { id: 'configuracoes', label: 'Configurações' },
 ];
 
 export default function App() {
@@ -40,6 +47,7 @@ export default function App() {
   const [erroConfirmadas, setErroConfirmadas] = useState(null);
   const [enviandoIds, setEnviandoIds] = useState(() => new Set());
   const [escolhaEmail, setEscolhaEmail] = useState(null);
+  const [detalhesEmpresa, setDetalhesEmpresa] = useState(null);
 
   const qDebounced = useDebounce(filtros.q);
   const qConfirmadasDebounced = useDebounce(qConfirmadas);
@@ -100,9 +108,10 @@ export default function App() {
     setConfirmandoIds((s) => new Set(s).add(empresa.id));
     try {
       await confirmarEmpresa(empresa.id, {});
+      setDetalhesEmpresa(null);
       recarregar();
     } catch (e) {
-      console.error(`Erro ao confirmar "${empresa.nome}":`, e.message);
+      alert(`Erro ao confirmar "${empresa.nome}": ${e.message}`);
     } finally {
       setConfirmandoIds((s) => {
         const n = new Set(s);
@@ -185,6 +194,7 @@ export default function App() {
     if (!confirm(`Descartar "${empresa.nome}"?`)) return;
     try {
       await descartarEmpresa(empresa.id);
+      setDetalhesEmpresa(null);
       recarregar();
     } catch (e) {
       alert(`Erro ao descartar: ${e.message}`);
@@ -196,10 +206,16 @@ export default function App() {
       <h1>Job Sourcing</h1>
       <Abas aba={aba} onChange={setAba} itens={ABAS} />
 
-      {aba === 'dashboard' && <Dashboard recarregarToken={recarregarToken} onConcluido={recarregar} />}
+      {aba === 'dashboard' && <Dashboard recarregarToken={recarregarToken} />}
+
+      {aba === 'historico' && <HistoricoExecucoes recarregarToken={recarregarToken} />}
+
+      {aba === 'configuracoes' && <Configuracoes />}
 
       {aba === 'coletar' && (
         <>
+          <ConfirmarEmMassaPanel onConcluido={recarregar} />
+          <EnviarCvEmMassaPanel onConcluido={recarregar} />
           <CrawlerPanel
             titulo="Crawler do GitHub"
             descricao="Busca organizações de software no GitHub localizadas no Brasil e em Portugal e adiciona as novas na base."
@@ -209,11 +225,11 @@ export default function App() {
             onConcluido={recarregar}
           />
           <CrawlerPanel
-            titulo="Crawler do Google (busca)"
-            descricao="Busca páginas de empresas de software via widget de busca do Google (BR e PT). Limite diário interno — nomes e sites precisam de revisão manual."
+            titulo="Crawler do DuckDuckGo (busca)"
+            descricao="Busca páginas de empresas de software via DuckDuckGo (BR e PT), paginando até 100 páginas por busca. Sem limite diário — nomes e sites precisam de revisão manual."
             cliente={clienteCrawlerGoogle}
-            mensagemIniciado="Coleta iniciada em segundo plano (buscas Google BR + PT)."
-            formatarErroLimite={(r) => `Limite diário de buscas atingido. Tenta de novo às ${formatarReset(r.reset_em)}.`}
+            mensagemIniciado="Coleta iniciada em segundo plano (buscas DuckDuckGo BR + PT)."
+            formatarErroLimite={(r) => `Erro: ${r.error || 'falha ao iniciar a coleta'}.`}
             onConcluido={recarregar}
           />
           <UploadPrints onConcluido={recarregar} />
@@ -228,7 +244,7 @@ export default function App() {
             empresas={resultado.data}
             carregando={carregando}
             erro={erro}
-            onConfirmar={handleConfirmar}
+            onAbrirDetalhes={setDetalhesEmpresa}
             onDescartar={handleDescartar}
             confirmandoIds={confirmandoIds}
           />
@@ -272,6 +288,16 @@ export default function App() {
             onChange={setPageConfirmadas}
           />
         </section>
+      )}
+
+      {detalhesEmpresa && (
+        <DetalhesEmpresaModal
+          empresa={detalhesEmpresa}
+          onConfirmar={handleConfirmar}
+          onDescartar={handleDescartar}
+          onFechar={() => setDetalhesEmpresa(null)}
+          confirmando={confirmandoIds.has(detalhesEmpresa.id)}
+        />
       )}
 
       {escolhaEmail && (
