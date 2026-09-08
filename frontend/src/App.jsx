@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listarEmpresas, listarFontes, confirmarEmpresa, descartarEmpresa, clienteCrawlerGithub, clienteCrawlerGoogle, listarEmpresasConfirmadas, enviarCv } from './api';
+import { listarEmpresas, listarFontes, listarPaises, confirmarEmpresa, descartarEmpresa, clienteCrawlerGithub, clienteCrawlerGoogle, listarEmpresasConfirmadas, enviarCv } from './api';
 import { useDebounce } from './useDebounce';
 import { formatarReset } from './format';
 import { Abas } from './Abas';
@@ -20,7 +20,7 @@ import { DetalhesEmpresaModal } from './DetalhesEmpresaModal';
 import { Vagas } from './Vagas';
 import './App.css';
 
-const FILTROS_INICIAIS = { q: '', status: 'pendente', fonte: '', pageSize: 20 };
+const FILTROS_INICIAIS = { q: '', status: 'pendente', fonte: '', pais: '', pageSize: 20 };
 const ABAS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'coletar', label: 'Ações' },
@@ -38,6 +38,7 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [resultado, setResultado] = useState({ data: [], total: 0, totalPages: 1 });
   const [fontes, setFontes] = useState([]);
+  const [paises, setPaises] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [recarregarToken, setRecarregarToken] = useState(0);
@@ -58,18 +59,19 @@ export default function App() {
 
   useEffect(() => {
     listarFontes().then(setFontes).catch(() => setFontes([]));
+    listarPaises().then(setPaises).catch(() => setPaises([]));
   }, [recarregarToken]);
 
   useEffect(() => {
     setPage(1);
-  }, [qDebounced, filtros.status, filtros.fonte, filtros.pageSize]);
+  }, [qDebounced, filtros.status, filtros.fonte, filtros.pais, filtros.pageSize]);
 
   useEffect(() => {
     let cancelado = false;
     setCarregando(true);
     setErro(null);
 
-    listarEmpresas({ page, pageSize: filtros.pageSize, status: filtros.status, fonte: filtros.fonte, q: qDebounced })
+    listarEmpresas({ page, pageSize: filtros.pageSize, status: filtros.status, fonte: filtros.fonte, pais: filtros.pais, q: qDebounced })
       .then((dados) => {
         if (!cancelado) setResultado(dados);
       })
@@ -81,7 +83,7 @@ export default function App() {
       });
 
     return () => { cancelado = true; };
-  }, [page, filtros.pageSize, filtros.status, filtros.fonte, qDebounced, recarregarToken]);
+  }, [page, filtros.pageSize, filtros.status, filtros.fonte, filtros.pais, qDebounced, recarregarToken]);
 
   useEffect(() => {
     setPageConfirmadas(1);
@@ -247,7 +249,7 @@ export default function App() {
       {aba === 'empresas' && (
         <section className="card card-acento-ambar">
           <h2>Empresas coletadas</h2>
-          <Filtros filtros={filtros} onChange={setFiltros} fontes={fontes} />
+          <Filtros filtros={filtros} onChange={setFiltros} fontes={fontes} paises={paises} />
           <TabelaEmpresas
             empresas={resultado.data}
             carregando={carregando}

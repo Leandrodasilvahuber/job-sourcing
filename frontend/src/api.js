@@ -9,12 +9,13 @@ async function requisitar(url, options) {
   return response.json();
 }
 
-export function listarEmpresas({ page, pageSize, status, fonte, q }) {
+export function listarEmpresas({ page, pageSize, status, fonte, pais, q }) {
   const params = new URLSearchParams();
   params.set('page', page);
   params.set('pageSize', pageSize);
   if (status) params.set('status', status);
   if (fonte) params.set('fonte', fonte);
+  if (pais) params.set('pais', pais);
   if (q) params.set('q', q);
   return requisitar(`${BASE}/empresas/nao-checadas?${params.toString()}`);
 }

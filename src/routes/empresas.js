@@ -71,7 +71,7 @@ async function confirmarUmaEmpresa(empresa) {
 router.get('/nao-checadas', (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize, 10) || 20));
-  const { status, fonte, q } = req.query;
+  const { status, fonte, pais, q } = req.query;
 
   const condicoes = [];
   const params = {};
@@ -83,6 +83,10 @@ router.get('/nao-checadas', (req, res) => {
   if (fonte) {
     condicoes.push('fonte = @fonte');
     params.fonte = fonte;
+  }
+  if (pais) {
+    condicoes.push('pais = @pais');
+    params.pais = pais;
   }
   if (q) {
     condicoes.push('(nome LIKE @q OR localizacao LIKE @q OR descricao LIKE @q)');

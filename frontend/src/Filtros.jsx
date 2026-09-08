@@ -1,4 +1,4 @@
-export function Filtros({ filtros, onChange, fontes }) {
+export function Filtros({ filtros, onChange, fontes, paises }) {
   function atualizar(campo, valor) {
     onChange({ ...filtros, [campo]: valor });
   }
@@ -24,6 +24,13 @@ export function Filtros({ filtros, onChange, fontes }) {
         <option value="">Todas as fontes</option>
         {fontes.map((fonte) => (
           <option key={fonte} value={fonte}>{fonte}</option>
+        ))}
+      </select>
+
+      <select value={filtros.pais} onChange={(e) => atualizar('pais', e.target.value)}>
+        <option value="">Todos os países</option>
+        {paises.map((pais) => (
+          <option key={pais} value={pais}>{pais}</option>
         ))}
       </select>
 
