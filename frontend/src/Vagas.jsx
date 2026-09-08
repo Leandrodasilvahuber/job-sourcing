@@ -12,6 +12,7 @@ import {
 } from './api';
 import { useDebounce } from './useDebounce';
 import { Paginacao } from './Paginacao';
+import { EscolherEmailModal } from './EscolherEmailModal';
 
 const ROTULO_STATUS = {
   pendente: 'Pendente',
@@ -179,6 +180,7 @@ export function Vagas({ recarregarToken }) {
   const [previewDados, setPreviewDados] = useState(null);
   const [previewErro, setPreviewErro] = useState(null);
   const [previewCarregando, setPreviewCarregando] = useState(false);
+  const [escolhaEmail, setEscolhaEmail] = useState(null);
 
   const qDebounced = useDebounce(q);
   const recarregar = () => setToken((t) => t + 1);
@@ -247,10 +249,15 @@ export function Vagas({ recarregarToken }) {
     }
   }
 
-  async function handleEnviarEmail(vaga) {
+  function candidatosEmail(vaga) {
+    const brutos = [vaga.contato_email, ...(vaga.pesquisa_emails || [])];
+    return [...new Set(brutos.filter((e) => e && e.trim()))];
+  }
+
+  async function executarEnvioEmail(vaga, destinatarioEmail) {
     setEnviandoIds((s) => new Set(s).add(vaga.id));
     try {
-      await enviarEmailVaga(vaga.id);
+      await enviarEmailVaga(vaga.id, destinatarioEmail);
       recarregar();
     } catch (e) {
       alert(`Erro ao enviar email: ${e.message}`);
@@ -261,6 +268,54 @@ export function Vagas({ recarregarToken }) {
         return n;
       });
     }
+  }
+
+  // Manda um de cada vez (não em paralelo) pra não sobrecarregar o SMTP do
+  // Gmail com vários envios simultâneos pra mesma vaga.
+  async function executarEnvioEmailTodos(vaga, emails) {
+    setEnviandoIds((s) => new Set(s).add(vaga.id));
+    try {
+      for (const email of emails) {
+        await enviarEmailVaga(vaga.id, email).catch((e) => {
+          console.error(`Erro ao enviar email para "${email}":`, e.message);
+        });
+      }
+      recarregar();
+    } finally {
+      setEnviandoIds((s) => {
+        const n = new Set(s);
+        n.delete(vaga.id);
+        return n;
+      });
+    }
+  }
+
+  async function handleEnviarEmail(vaga) {
+    const candidatos = candidatosEmail(vaga);
+
+    if (candidatos.length === 0) {
+      alert(`Nenhum email encontrado para "${vaga.empresa_nome}". Não é possível enviar.`);
+      return;
+    }
+
+    if (candidatos.length === 1) {
+      await executarEnvioEmail(vaga, candidatos[0]);
+      return;
+    }
+
+    setEscolhaEmail({ vaga, candidatos });
+  }
+
+  function handleEscolherEmail(destinatarioEmail) {
+    const { vaga } = escolhaEmail;
+    setEscolhaEmail(null);
+    executarEnvioEmail(vaga, destinatarioEmail);
+  }
+
+  function handleEnviarTodos() {
+    const { vaga, candidatos } = escolhaEmail;
+    setEscolhaEmail(null);
+    executarEnvioEmailTodos(vaga, candidatos);
   }
 
   return (
@@ -391,6 +446,16 @@ export function Vagas({ recarregarToken }) {
             )}
           </div>
         </div>
+      )}
+
+      {escolhaEmail && (
+        <EscolherEmailModal
+          empresa={{ nome: escolhaEmail.vaga.empresa_nome }}
+          candidatos={escolhaEmail.candidatos}
+          onEscolher={handleEscolherEmail}
+          onEnviarTodos={handleEnviarTodos}
+          onFechar={() => setEscolhaEmail(null)}
+        />
       )}
     </>
   );

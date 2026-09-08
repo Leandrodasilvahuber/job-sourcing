@@ -283,6 +283,11 @@ router.post('/:id/descartar', (req, res) => {
   res.json({ id: Number(id), status: 'descartada' });
 });
 
+function candidatosEmailVaga(vaga) {
+  const brutos = [vaga.contato_email, ...JSON.parse(vaga.pesquisa_emails || '[]')];
+  return [...new Set(brutos.filter((e) => e && e.trim()))];
+}
+
 function buscarTemplateVaga() {
   const assunto = buscarVagaAssunto.get();
   const texto = buscarVagaTexto.get();
@@ -322,6 +327,13 @@ router.post('/:id/enviar-email', async (req, res) => {
     return res.status(400).json({ error: 'Vaga ainda não tem e-mail validado.' });
   }
 
+  const candidatos = candidatosEmailVaga(vaga);
+  const destinatarioEmail = req.body?.destinatario_email;
+  if (destinatarioEmail && !candidatos.includes(destinatarioEmail)) {
+    return res.status(400).json({ error: 'E-mail informado não é um dos e-mails encontrados para essa vaga.' });
+  }
+  const destinatario = destinatarioEmail || vaga.contato_email;
+
   const template = buscarTemplateVaga();
   if (template.erro) {
     return res.status(400).json({ error: template.erro });
@@ -341,7 +353,7 @@ router.post('/:id/enviar-email', async (req, res) => {
 
   try {
     await enviarEmailComCv({
-      destinatario: vaga.contato_email,
+      destinatario,
       assunto: personalizado.assunto,
       corpo: personalizado.corpo,
       nomeArquivoCv: curriculoMeta.nome_arquivo,
@@ -352,7 +364,7 @@ router.post('/:id/enviar-email', async (req, res) => {
 
   registrarEnvio.run({
     id,
-    destinatario_email_enviado: vaga.contato_email,
+    destinatario_email_enviado: destinatario,
     conteudo_enviado: personalizado.corpo,
   });
 

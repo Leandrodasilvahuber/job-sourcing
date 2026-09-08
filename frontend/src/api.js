@@ -272,8 +272,12 @@ export function visualizarEmailVaga(id) {
   return requisitar(`${BASE}/vagas/${id}/preview-email`);
 }
 
-export function enviarEmailVaga(id) {
-  return requisitar(`${BASE}/vagas/${id}/enviar-email`, { method: 'POST' });
+export function enviarEmailVaga(id, destinatarioEmail) {
+  return requisitar(`${BASE}/vagas/${id}/enviar-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destinatario_email: destinatarioEmail }),
+  });
 }
 
 export function buscarVagaEmailTexto() {
