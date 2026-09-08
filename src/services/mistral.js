@@ -1,10 +1,16 @@
 const axios = require('axios');
 const { contagemAtual, incrementarUso, incrementarUsoEm, marcarEsgotado, proximaMeiaNoiteLocal } = require('./usoApi');
 
-const API_BASE = 'https://api.mistral.ai/v1';
+// 2026-09-07: passou a falar com o proxy LiteLLM local em vez da API do Mistral
+// direto. As chaves, o rate limit por minuto e o fallback entre contas (essa
+// conta Mistral -> segunda conta Mistral -> Gemini -> Groq) ficam centralizados
+// no config.yaml do proxy, junto com Kanbu, OpenClaude e Orquestrador -- não
+// depende mais de uma MISTRAL_API_KEY própria deste app.
+const API_BASE = process.env.LLM_BASE_URL || 'http://127.0.0.1:4000/v1';
+const MODELO_LITELLM = process.env.LLM_MODEL_MISTRAL || 'openclaude-mistral';
 const FONTE_USO = 'mistral';
 const FONTE_TOKENS = 'mistral_tokens';
-const MODELO_PADRAO = 'mistral-large-latest';
+const MODELO_PADRAO = MODELO_LITELLM;
 // Visto no header x-ratelimit-limit-tokens-minute de uma resposta real da
 // conta em uso (250000). É um limite por minuto, não diário — usamos como
 // referência só pra dar um teto à barra de progresso do dashboard, não pra
@@ -55,12 +61,12 @@ class MistralRespostaInvalidaError extends Error {
 }
 
 function modelo() {
-  return process.env.MISTRAL_MODEL || MODELO_PADRAO;
+  return MODELO_PADRAO;
 }
 
 function apiKeyOuFalhar() {
-  const key = process.env.MISTRAL_API_KEY;
-  if (!key) throw new CredenciaisMistralAusentesError(['MISTRAL_API_KEY']);
+  const key = process.env.LLM_API_KEY;
+  if (!key) throw new CredenciaisMistralAusentesError(['LLM_API_KEY']);
   return key;
 }
 
@@ -81,13 +87,14 @@ function ehErroDeQuotaMistral(erro) {
   return erro.response?.status === 429;
 }
 
-// A conta usada aqui é limitada a poucas requisições por minuto (visto no
-// header x-ratelimit-limit-req-minute de uma resposta 429 real — 4/min).
-// Sem isso, o pipeline de pesquisaEmpresa.js (até 5 chamadas por empresa)
-// estoura o limite quase imediatamente. Serializa as chamadas numa fila e
-// espera abrir vaga na janela de 1 minuto antes de deixar a próxima passar,
-// mesmo com chamadas concorrentes (ex: confirmação em massa).
-const LIMITE_REQ_MINUTO = Number(process.env.MISTRAL_REQ_POR_MINUTO) || 4;
+// 2026-09-07: desde a migração pro proxy LiteLLM local, o limite real por
+// conta é 50 req/min (rpm nos aliases openclaude-mistral/-2 do config.yaml
+// do proxy) — os 4/min antigos eram do header x-ratelimit-limit-req-minute
+// de quando o app chamava a API do Mistral direto, sem proxy. Mantido como
+// fila (e não removido) porque o pipeline de pesquisaEmpresa.js (até 5
+// chamadas por empresa) ainda pode estourar o limite em rajada, mesmo com
+// chamadas concorrentes (ex: confirmação em massa).
+const LIMITE_REQ_MINUTO = Number(process.env.MISTRAL_REQ_POR_MINUTO) || 50;
 const JANELA_MS = 60_000;
 const historicoChamadas = [];
 let filaEspera = Promise.resolve();
@@ -142,7 +149,12 @@ async function chatCompletion({ messages, tools, toolChoice, responseFormat }) {
         ...(responseFormat ? { response_format: responseFormat } : {}),
       },
       {
-        timeout: 60000,
+        // >90s: o proxy LiteLLM (router_settings.timeout: 90 no config.yaml)
+        // as vezes trava na conta primaria do Mistral (tier gratuito, hang
+        // intermitente conhecido) e só resolve via fallback (mistral-2 ->
+        // gemini -> groq) dentro desses 90s. Um timeout aqui menor que isso
+        // (era 60000) mata a chamada bem na hora em que o fallback ia dar certo.
+        timeout: 100000,
         headers: { Authorization: `Bearer ${key}` },
       },
     );
